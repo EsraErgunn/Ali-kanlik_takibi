@@ -1,27 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/bloom_app_bar.dart';
 import '../../core/widgets/widgets.dart';
+import '../../data/models/habit.dart';
+import '../auth/providers.dart';
+import 'providers.dart';
 
-class NewHabitScreen extends StatefulWidget {
+class NewHabitScreen extends ConsumerStatefulWidget {
   const NewHabitScreen({super.key});
 
   @override
-  State<NewHabitScreen> createState() => _NewHabitScreenState();
+  ConsumerState<NewHabitScreen> createState() => _NewHabitScreenState();
 }
 
-class _NewHabitScreenState extends State<NewHabitScreen> {
-  String _habitType = 'build'; // 'build' or 'quit'
+class _NewHabitScreenState extends ConsumerState<NewHabitScreen> {
+  String _habitType = 'build'; // 'build' or 'quit' or 'count'
   final _titleController = TextEditingController();
   int _selectedColorIndex = 0;
   int _selectedIconIndex = 0;
   TimeOfDay _reminderTime = const TimeOfDay(hour: 20, minute: 0);
   final Set<int> _reminderDays = {1, 2, 3, 4, 5, 6, 7};
+  bool _isSaving = false;
 
   // For quit habit
   final _unitsPerDayController = TextEditingController(text: '1');
   final _unitPriceController = TextEditingController(text: '100');
+
+  // For count habit
+  int _dailyTarget = 5;
+  String _unit = 'Bardak';
 
   final List<Color> _colors = [
     AppColors.primary,
@@ -54,13 +63,79 @@ class _NewHabitScreenState extends State<NewHabitScreen> {
   void _applyTemplate(Map<String, dynamic> template) {
     setState(() {
       _titleController.text = template['title'] as String;
-      _habitType = template['type'] == 'quit' ? 'quit' : 'build';
+      final typeStr = template['type'] as String;
+      _habitType = typeStr;
       final iconIdx = _icons.indexOf(template['icon'] as String);
       if (iconIdx != -1) _selectedIconIndex = iconIdx;
-      if (template['type'] == 'quit') {
+      if (typeStr == 'quit') {
         _unitPriceController.text = (template['price'] ?? 100.0).toString();
+      } else if (typeStr == 'count') {
+        _dailyTarget = (template['dailyTarget'] as num?)?.toInt() ?? 5;
+        _unit = template['unit'] as String? ?? 'Bardak';
       }
     });
+  }
+
+  Future<void> _saveHabit() async {
+    final title = _titleController.text.trim();
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lütfen tohumuna bir isim ver 🌱')),
+      );
+      return;
+    }
+
+    final uid = ref.read(uidProvider);
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lütfen önce giriş yap.')),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      final habitType = _habitType == 'quit'
+          ? HabitType.quit
+          : (_habitType == 'count' ? HabitType.count : HabitType.build);
+
+      final habit = Habit(
+        id: '',
+        title: title,
+        type: habitType,
+        targetLabel: _habitType == 'build' ? 'Hedef: Günlük Tamamlama' : null,
+        dailyTarget: _habitType == 'count' ? _dailyTarget : null,
+        unit: _habitType == 'count' ? _unit : null,
+        unitsPerDay: _habitType == 'quit' ? int.tryParse(_unitsPerDayController.text) ?? 1 : null,
+        unitPrice: _habitType == 'quit' ? double.tryParse(_unitPriceController.text) ?? 0.0 : null,
+        icon: _icons[_selectedIconIndex],
+        color: _colors[_selectedColorIndex].toARGB32(),
+        startDate: DateTime.now(),
+        lastRelapseAt: _habitType == 'quit' ? DateTime.now() : null,
+        reminderTime:
+            '${_reminderTime.hour.toString().padLeft(2, '0')}:${_reminderTime.minute.toString().padLeft(2, '0')}',
+        reminderDays: _reminderDays.toList()..sort(),
+        createdAt: DateTime.now(),
+      );
+
+      await ref.read(habitRepositoryProvider).addHabit(uid, habit);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tohum bahçene dikildi! 🌱')),
+        );
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Tohum eklenirken hata: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   @override
@@ -421,10 +496,8 @@ class _NewHabitScreenState extends State<NewHabitScreen> {
             // Submit Button
             PrimaryPillButton(
               text: '🪴 Tohumu Bahçeme Dik',
-              onPressed: () {
-                // TODO(habit): Save habit via HabitRepository
-                Navigator.of(context).pop();
-              },
+              isLoading: _isSaving,
+              onPressed: _saveHabit,
             ),
             SizedBox(height: 8.h),
             Center(

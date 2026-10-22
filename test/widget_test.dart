@@ -15,7 +15,7 @@ void main() {
         child: BloomHabitApp(),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.text('BloomHabit'), findsWidgets);
     expect(find.text('Bahçem'), findsWidgets);
