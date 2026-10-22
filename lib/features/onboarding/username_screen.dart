@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/widgets.dart';
+import '../auth/providers.dart';
 
-class UsernameScreen extends StatefulWidget {
+class UsernameScreen extends ConsumerStatefulWidget {
   const UsernameScreen({super.key});
 
   @override
-  State<UsernameScreen> createState() => _UsernameScreenState();
+  ConsumerState<UsernameScreen> createState() => _UsernameScreenState();
 }
 
-class _UsernameScreenState extends State<UsernameScreen> {
+class _UsernameScreenState extends ConsumerState<UsernameScreen> {
   final _usernameController = TextEditingController();
   bool _isValid = false;
+  bool _isLoading = false;
   String? _validationMessage;
 
   @override
@@ -37,6 +40,38 @@ class _UsernameScreenState extends State<UsernameScreen> {
         _validationMessage = 'Bu kullanıcı adı uygun ✓';
       }
     });
+  }
+
+  Future<void> _submit() async {
+    final username = _usernameController.text.trim();
+    final uid = ref.read(uidProvider);
+
+    if (username.isEmpty || !_isValid) return;
+
+    setState(() {
+      _isLoading = true;
+      _validationMessage = null;
+    });
+
+    try {
+      if (uid != null) {
+        await ref.read(userRepositoryProvider).claimUsername(uid, username);
+      }
+      if (mounted) {
+        context.go('/home');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isValid = false;
+          _validationMessage = e.toString();
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -130,11 +165,8 @@ class _UsernameScreenState extends State<UsernameScreen> {
 
               PrimaryPillButton(
                 text: 'Bahçeme Gir 🌱',
-                onPressed: _isValid
-                    ? () {
-                        context.go('/home');
-                      }
-                    : null,
+                isLoading: _isLoading,
+                onPressed: _isValid ? _submit : null,
               ),
             ],
           ),

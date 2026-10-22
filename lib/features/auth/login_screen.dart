@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/widgets.dart';
+import 'providers.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final bool _isLoading = false;
+  bool _isLoading = false;
   String? _errorMessage;
 
   @override
@@ -24,9 +26,56 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _login() {
-    // Navigate into main shell for now, auth repository will hook in Phase 1
-    context.go('/home');
+  Future<void> _login() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      setState(() => _errorMessage = 'Lütfen e-posta ve şifreni gir.');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await ref.read(authRepositoryProvider).signInWithEmail(email, password);
+      if (mounted) {
+        context.go('/home');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _errorMessage = e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _loginWithGoogle() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final cred = await ref.read(authRepositoryProvider).signInWithGoogle();
+      if (cred != null && mounted) {
+        context.go('/home');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _errorMessage = e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -110,7 +159,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         SizedBox(height: 10.h),
                         Text(
                           _errorMessage!,
-                          style: TextStyle(fontSize: 12.sp, color: AppColors.secondary),
+                          style: TextStyle(fontSize: 12.sp, color: AppColors.secondary, fontWeight: FontWeight.w600),
                         ),
                       ],
                       SizedBox(height: 20.h),
@@ -131,7 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderRadius: BorderRadius.circular(999.r),
                           ),
                         ),
-                        onPressed: _login,
+                        onPressed: _isLoading ? null : _loginWithGoogle,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [

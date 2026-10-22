@@ -1,21 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/widgets.dart';
+import 'providers.dart';
 
-class RegisterScreen extends StatefulWidget {
+class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _passwordConfirmController = TextEditingController();
-  final bool _isLoading = false;
+  bool _isLoading = false;
   String? _errorMessage;
 
   @override
@@ -26,9 +28,49 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  void _register() {
-    // Navigate to character selection in onboarding
-    context.go('/onboarding/character');
+  Future<void> _register() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirm = _passwordConfirmController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      setState(() => _errorMessage = 'Lütfen tüm alanları doldur.');
+      return;
+    }
+
+    if (password != confirm) {
+      setState(() => _errorMessage = 'Şifreler birbiriyle eşleşmiyor.');
+      return;
+    }
+
+    if (password.length < 6) {
+      setState(() => _errorMessage = 'Şifre en az 6 karakter olmalı.');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final cred = await ref.read(authRepositoryProvider).registerWithEmail(email, password);
+      final uid = cred.user?.uid;
+      if (uid != null) {
+        await ref.read(userRepositoryProvider).createInitialUser(uid: uid);
+      }
+      if (mounted) {
+        context.go('/onboarding/character');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _errorMessage = e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -115,7 +157,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         SizedBox(height: 10.h),
                         Text(
                           _errorMessage!,
-                          style: TextStyle(fontSize: 12.sp, color: AppColors.secondary),
+                          style: TextStyle(fontSize: 12.sp, color: AppColors.secondary, fontWeight: FontWeight.w600),
                         ),
                       ],
                       SizedBox(height: 20.h),

@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/widgets.dart';
+import '../auth/providers.dart';
 
-class CharacterScreen extends StatefulWidget {
+class CharacterScreen extends ConsumerStatefulWidget {
   const CharacterScreen({super.key});
 
   @override
-  State<CharacterScreen> createState() => _CharacterScreenState();
+  ConsumerState<CharacterScreen> createState() => _CharacterScreenState();
 }
 
-class _CharacterScreenState extends State<CharacterScreen> {
+class _CharacterScreenState extends ConsumerState<CharacterScreen> {
   int _selectedCharacterIndex = 0;
+  bool _isLoading = false;
 
   final List<Map<String, String>> _characters = [
     {'id': 'char_1', 'emoji': '🧑‍🌾', 'name': 'Neşeli Bahçıvan', 'trait': 'Toprak Ustası'},
@@ -22,6 +25,26 @@ class _CharacterScreenState extends State<CharacterScreen> {
     {'id': 'char_5', 'emoji': '🦊', 'name': 'Kızıl Tilki', 'trait': 'Çevik Alışkanlık'},
     {'id': 'char_6', 'emoji': '🦉', 'name': 'Gece Baykuşu', 'trait': 'Odak & Disiplin'},
   ];
+
+  Future<void> _continue() async {
+    final uid = ref.read(uidProvider);
+    final selectedId = _characters[_selectedCharacterIndex]['id']!;
+
+    if (uid != null) {
+      setState(() => _isLoading = true);
+      try {
+        await ref.read(userRepositoryProvider).updateCharacter(uid, selectedId);
+      } catch (_) {
+        // Continue even if offline/mocked
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
+    }
+
+    if (mounted) {
+      context.push('/onboarding/username');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -120,9 +143,8 @@ class _CharacterScreenState extends State<CharacterScreen> {
 
               PrimaryPillButton(
                 text: 'Devam Et 🌱',
-                onPressed: () {
-                  context.push('/onboarding/username');
-                },
+                isLoading: _isLoading,
+                onPressed: _continue,
               ),
             ],
           ),
