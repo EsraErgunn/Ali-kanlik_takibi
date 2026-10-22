@@ -11,6 +11,7 @@ import '../../domain/plant_stage.dart';
 import '../auth/providers.dart';
 import 'providers.dart';
 import 'widgets/habit_card.dart';
+import 'widgets/motivation_cards_section.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -49,7 +50,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             SizedBox(height: 16.h),
 
             // 2. Günün AI Kehaneti
-            _buildMotivationSection(context),
+            const MotivationCardsSection(),
             SizedBox(height: 20.h),
 
             // 3. Bugünkü Görevler ve Filtreler
@@ -157,93 +158,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildMotivationSection(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SectionHeader(
-          title: 'Günün AI Kehaneti',
-          icon: Text('✨'),
-          trailing: StatusChip(
-            text: '1/1 Hak',
-            tone: ChipTone.neutral,
-          ),
-        ),
-        SizedBox(height: 10.h),
-        SizedBox(
-          height: 130.h,
-          child: Row(
-            children: [
-              Expanded(
-                flex: 3,
-                child: BloomCard(
-                  color: AppColors.primaryContainer.withValues(alpha: 0.35),
-                  padding: EdgeInsets.all(12.r),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const EyebrowLabel('🌱 DERİN KÖKLER KARTI', color: AppColors.primary),
-                      Text(
-                        '“En güçlü fırtınalara sessizce toprağa tutunan tohumlar dayanır.”',
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          fontStyle: FontStyle.italic,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.neutral,
-                        ),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '#NefesVeDirenç',
-                            style: TextStyle(
-                              fontSize: 10.sp,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primaryDark,
-                            ),
-                          ),
-                          Icon(
-                            Icons.bookmark_added_rounded,
-                            size: 16.r,
-                            color: AppColors.primary,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox(width: 8.w),
-              const Expanded(
-                flex: 2,
-                child: LockedCard(
-                  title: 'Yarın Açılır',
-                  subtitle: 'Güneş Işığı Kartı',
-                ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(height: 6.h),
-        Center(
-          child: Text(
-            'Günde sadece 1 kehanet seçme hakkın var. Seçtiğin kart bugünkü enerjini belirler.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 10.sp,
-              fontWeight: FontWeight.w500,
-              color: AppColors.neutralVariant,
-            ),
-          ),
-        ),
-      ],
     );
   }
 
