@@ -12,6 +12,7 @@ import '../auth/providers.dart';
 import 'providers.dart';
 import 'widgets/habit_card.dart';
 import 'widgets/motivation_cards_section.dart';
+import 'widgets/swaying_plant.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -66,19 +67,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     BuildContext context,
     ({PlantStage stage, int completedCycles, int dayInCycle, double cycleProgress}) plantInfo,
   ) {
-    return BloomCard(
-      gradient: const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color(0xFFF2F8F4),
-          Color(0xFFFAF7F2),
-        ],
-      ),
-      borderColor: AppColors.primary.withValues(alpha: 0.2),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return InkWell(
+      onTap: () => context.push('/garden'),
+      borderRadius: BorderRadius.circular(20.r),
+      child: BloomCard(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFF2F8F4),
+            Color(0xFFFAF7F2),
+          ],
+        ),
+        borderColor: AppColors.primary.withValues(alpha: 0.2),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -104,18 +108,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   tone: ChipTone.tertiary,
                 ),
                 SizedBox(height: 12.h),
-                // Plant display
-                Container(
-                  height: 130.h,
-                  width: 130.h,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.primaryContainer.withValues(alpha: 0.5),
-                  ),
+                // Swaying plant display with wind physics
+                SizedBox(
+                  height: 125.h,
                   child: Center(
-                    child: Text(
-                      plantInfo.stage.emoji,
-                      style: TextStyle(fontSize: 58.sp),
+                    child: SwayingPlant(
+                      stage: plantInfo.stage,
+                      height: 120.h,
                     ),
                   ),
                 ),
@@ -158,7 +157,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildTasksSection(BuildContext context, AsyncValue<List<Habit>> habitsAsync) {

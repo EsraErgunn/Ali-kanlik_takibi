@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/analytics/analytics_screen.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/register_screen.dart';
+import '../../features/garden/garden_screen.dart';
 import '../../features/habits/habits_screen.dart';
 import '../../features/habit_detail/habit_detail_screen.dart';
 import '../../features/home/home_screen.dart';
@@ -51,6 +52,13 @@ final GoRouter appRouter = GoRouter(
         final habitId = state.pathParameters['id'] ?? '';
         return HabitDetailScreen(habitId: habitId);
       },
+    ),
+
+    // Garden Screen (full page flower gallery)
+    GoRoute(
+      path: '/garden',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const GardenScreen(),
     ),
 
     // Main App Shell with 5 branches (4 tab destinations + center FAB push)
