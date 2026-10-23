@@ -21,6 +21,13 @@ final habitsProvider = StreamProvider<List<Habit>>((ref) {
   return ref.watch(habitRepositoryProvider).watchHabits(uid);
 });
 
+final archivedHabitsProvider = StreamProvider<List<Habit>>((ref) {
+  final uid = ref.watch(uidProvider);
+  if (uid == null) return const Stream.empty();
+  return ref.watch(habitRepositoryProvider).watchArchivedHabits(uid);
+});
+
+
 final habitLogsProvider = StreamProvider.family<LogMap, String>((ref, habitId) {
   final uid = ref.watch(uidProvider);
   if (uid == null) return const Stream.empty();

@@ -26,6 +26,18 @@ class HabitRepository {
     });
   }
 
+  Stream<List<Habit>> watchArchivedHabits(String uid) {
+    return _habits(uid)
+        .where('isDeleted', isEqualTo: true)
+        .snapshots()
+        .map((snap) {
+      final list = snap.docs.map(Habit.fromDoc).toList();
+      list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return list;
+    });
+  }
+
+
   Future<Habit?> getHabit(String uid, String habitId) async {
     final doc = await _habits(uid).doc(habitId).get();
     if (!doc.exists) return null;
