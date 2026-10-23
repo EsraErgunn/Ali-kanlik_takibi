@@ -275,6 +275,35 @@ class HabitRepository {
     }
   }
 
+  Future<void> saveRelapseSupport(
+    String uid,
+    String habitId,
+    String dateKey,
+    Map<String, dynamic> support,
+  ) async {
+    final existingLogs = LocalStorageService.instance.getHabitLogs(uid, habitId);
+    final logData = existingLogs[dateKey] != null
+        ? Map<String, dynamic>.from(existingLogs[dateKey]!)
+        : <String, dynamic>{
+            'date': dateKey,
+            'status': 'relapse',
+            'at': DateTime.now().toIso8601String(),
+          };
+    logData['support'] = support;
+    await LocalStorageService.instance.saveHabitLog(uid, habitId, dateKey, logData);
+    _notifyLogsChanged(uid, habitId);
+
+    final logsRef = _logs(uid, habitId);
+    if (!AuthRepository.isLocalUid(uid) && logsRef != null) {
+      try {
+        await logsRef.doc(dateKey).set(
+          {'support': support},
+          SetOptions(merge: true),
+        );
+      } catch (_) {}
+    }
+  }
+
   Future<void> incrementCount(String uid, String habitId, int dailyTarget) async {
     final today = DateKey.today();
     final logs = LocalStorageService.instance.getHabitLogs(uid, habitId);

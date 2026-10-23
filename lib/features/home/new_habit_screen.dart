@@ -44,13 +44,15 @@ class _NewHabitScreenState extends ConsumerState<NewHabitScreen> {
 
   final List<String> _icons = ['🌱', '📚', '🏃‍♂️', '💧', '🚭', '🧘'];
 
+  String _category = 'other';
+
   final List<Map<String, dynamic>> _templates = [
-    {'title': 'Kitap Okuma (20 sf)', 'type': 'build', 'icon': '📚', 'target': '20 Sayfa'},
-    {'title': 'Sigarayı Bırak', 'type': 'quit', 'icon': '🚭', 'unit': 'Paket', 'price': 100.0},
-    {'title': 'Su İç (5 Bardak)', 'type': 'count', 'icon': '💧', 'dailyTarget': 5, 'unit': 'Bardak'},
-    {'title': 'Spor & Egzersiz', 'type': 'build', 'icon': '🏃‍♂️'},
-    {'title': 'Zayıflama & Diyet', 'type': 'build', 'icon': '🥗'},
-    {'title': 'Alkolü Bırak', 'type': 'quit', 'icon': '🍷', 'unit': 'Kadeh', 'price': 150.0},
+    {'title': 'Kitap Okuma (20 sf)', 'type': 'build', 'category': 'other', 'icon': '📚', 'target': '20 Sayfa'},
+    {'title': 'Sigarayı Bırak', 'type': 'quit', 'category': 'smoking', 'icon': '🚭', 'unit': 'Paket', 'price': 100.0},
+    {'title': 'Su İç (5 Bardak)', 'type': 'count', 'category': 'other', 'icon': '💧', 'dailyTarget': 5, 'unit': 'Bardak'},
+    {'title': 'Spor & Egzersiz', 'type': 'build', 'category': 'other', 'icon': '🏃‍♂️'},
+    {'title': 'Zayıflama & Diyet', 'type': 'build', 'category': 'other', 'icon': '🥗'},
+    {'title': 'Alkolü Bırak', 'type': 'quit', 'category': 'alcohol', 'icon': '🍷', 'unit': 'Kadeh', 'price': 150.0},
   ];
 
   @override
@@ -66,6 +68,7 @@ class _NewHabitScreenState extends ConsumerState<NewHabitScreen> {
       _titleController.text = template['title'] as String;
       final typeStr = template['type'] as String;
       _habitType = typeStr;
+      _category = template['category'] as String? ?? 'other';
       final iconIdx = _icons.indexOf(template['icon'] as String);
       if (iconIdx != -1) _selectedIconIndex = iconIdx;
       if (typeStr == 'quit') {
@@ -110,6 +113,7 @@ class _NewHabitScreenState extends ConsumerState<NewHabitScreen> {
         unit: _habitType == 'count' ? _unit : null,
         unitsPerDay: _habitType == 'quit' ? int.tryParse(_unitsPerDayController.text) ?? 1 : null,
         unitPrice: _habitType == 'quit' ? double.tryParse(_unitPriceController.text) ?? 0.0 : null,
+        category: _category,
         icon: _icons[_selectedIconIndex],
         color: _colors[_selectedColorIndex].toARGB32(),
         startDate: DateTime.now(),

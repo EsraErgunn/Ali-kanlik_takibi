@@ -6,12 +6,14 @@ class HabitLog {
     required this.status,
     this.count,
     required this.at,
+    this.support,
   });
 
   final String date; // yyyy-MM-dd
   final String status; // 'done' | 'relapse' | 'frozen' | 'partial'
   final int? count;
   final DateTime at;
+  final Map<String, dynamic>? support; // { 'message': '...', 'nextStep': '...' }
 
   factory HabitLog.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     return HabitLog.fromMap(doc.data() ?? {}, defaultDate: doc.id);
@@ -29,6 +31,7 @@ class HabitLog {
       status: data['status'] as String? ?? 'done',
       count: (data['count'] as num?)?.toInt(),
       at: parseDate(data['at']),
+      support: data['support'] != null ? Map<String, dynamic>.from(data['support'] as Map) : null,
     );
   }
 
@@ -38,6 +41,7 @@ class HabitLog {
       'status': status,
       'count': count,
       'at': Timestamp.fromDate(at),
+      if (support != null) 'support': support,
     };
   }
 }

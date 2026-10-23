@@ -13,6 +13,7 @@ class Habit {
     this.unitAmountLabel,
     this.unitsPerDay,
     this.unitPrice,
+    this.category = 'other',
     required this.icon,
     required this.color,
     required this.startDate,
@@ -32,6 +33,7 @@ class Habit {
   final String? unitAmountLabel;
   final int? unitsPerDay;
   final double? unitPrice;
+  final String category; // "smoking" | "alcohol" | "other"
   final String icon;
   final int color; // ARGB
   final DateTime startDate;
@@ -75,6 +77,7 @@ class Habit {
       unitAmountLabel: data['unitAmountLabel'] as String?,
       unitsPerDay: (data['unitsPerDay'] as num?)?.toInt(),
       unitPrice: (data['unitPrice'] as num?)?.toDouble(),
+      category: data['category'] as String? ?? 'other',
       icon: data['icon'] as String? ?? '🌱',
       color: (data['color'] as num?)?.toInt() ?? 0xFF1B6B48,
       startDate: parseDate(data['startDate']),
@@ -97,6 +100,7 @@ class Habit {
       'unitAmountLabel': unitAmountLabel,
       'unitsPerDay': unitsPerDay,
       'unitPrice': unitPrice,
+      'category': category,
       'icon': icon,
       'color': color,
       'startDate': Timestamp.fromDate(startDate),
@@ -118,6 +122,7 @@ class Habit {
     String? unitAmountLabel,
     int? unitsPerDay,
     double? unitPrice,
+    String? category,
     String? icon,
     int? color,
     DateTime? startDate,
@@ -136,6 +141,7 @@ class Habit {
       unitAmountLabel: unitAmountLabel ?? this.unitAmountLabel,
       unitsPerDay: unitsPerDay ?? this.unitsPerDay,
       unitPrice: unitPrice ?? this.unitPrice,
+      category: category ?? this.category,
       icon: icon ?? this.icon,
       color: color ?? this.color,
       startDate: startDate ?? this.startDate,

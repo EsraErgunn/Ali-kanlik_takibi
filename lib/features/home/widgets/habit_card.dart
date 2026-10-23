@@ -8,8 +8,10 @@ import '../../../core/widgets/confetti_overlay.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../data/models/habit.dart';
 import '../../../data/models/habit_log.dart';
+import '../../../data/models/support_message.dart';
 import '../../../domain/habit_stats.dart';
 import '../../auth/providers.dart';
+import '../../relapse/relapse_support_sheet.dart';
 import '../providers.dart';
 
 class HabitCardItem extends ConsumerWidget {
@@ -80,7 +82,7 @@ class HabitCardItem extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Kaydın mı?'),
-        content: Text(
+        content: const Text(
           'Dürüstlüğün için tebrikler. Bugünün kaydı "relapse" olarak işaretlenecek ve sayacın sıfırlanacak. Unutma, her an yeniden başlayabilirsin!',
         ),
         actions: [
@@ -95,11 +97,19 @@ class HabitCardItem extends ConsumerWidget {
           ),
         ],
       ),
-    ).then((confirmed) {
+    ).then((confirmed) async {
       if (confirmed == true) {
         final uid = ref.read(uidProvider);
         if (uid != null) {
-          ref.read(habitRepositoryProvider).recordRelapse(uid, habit.id);
+          final previousStreak = cleanStreakBeforeRelapse(logs, DateTime.now());
+          await ref.read(habitRepositoryProvider).recordRelapse(uid, habit.id);
+          if (context.mounted) {
+            showRelapseSupportSheet(
+              context: context,
+              habit: habit.copyWith(lastRelapseAt: DateTime.now()),
+              streakBeforeRelapse: previousStreak,
+            );
+          }
         }
       }
     });
@@ -413,6 +423,25 @@ class HabitCardItem extends ConsumerWidget {
             ),
           ],
         ),
+        if (todayLog?.status == 'relapse') ...[
+          SizedBox(height: 8.h),
+          OutlinePillButton(
+            text: '🌱 AI Destek Mesajı',
+            height: 38.h,
+            tone: AppColors.primary,
+            onPressed: () {
+              final prevStreak = cleanStreakBeforeRelapse(logs, DateTime.now());
+              showRelapseSupportSheet(
+                context: context,
+                habit: habit,
+                streakBeforeRelapse: prevStreak,
+                cachedMessage: todayLog?.support != null && SupportMessage.isValidMap(todayLog!.support)
+                    ? SupportMessage.fromMap(todayLog!.support!)
+                    : null,
+              );
+            },
+          ),
+        ],
       ],
     );
   }

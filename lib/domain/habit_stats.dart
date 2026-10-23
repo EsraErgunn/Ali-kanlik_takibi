@@ -394,3 +394,45 @@ List<({String label, int count, int year, int month})> monthlyTrend(LogMap logs,
   return result;
 }
 
+/// Clean streak before today's relapse:
+/// Counts consecutive days backwards starting from yesterday (today is relapse).
+int cleanStreakBeforeRelapse(LogMap logs, DateTime today) {
+  var day = DateKey.addDays(today, -1);
+  var count = 0;
+  while (keepsChain(logs, day)) {
+    if (isDone(logs, day)) count++;
+    day = DateKey.addDays(day, -1);
+  }
+  return count;
+}
+
+/// Total count of all clean (done) days recorded.
+int totalCleanDays(LogMap logs) {
+  return logs.values.where((status) => status == 'done').length;
+}
+
+/// Count of relapses recorded in the same calendar month as [today].
+int relapsesThisMonth(LogMap logs, DateTime today) {
+  var count = 0;
+  for (final entry in logs.entries) {
+    if (entry.value == 'relapse') {
+      try {
+        final d = DateKey.parse(entry.key);
+        if (d.year == today.year && d.month == today.month) {
+          count++;
+        }
+      } catch (_) {}
+    }
+  }
+  return count;
+}
+
+/// Human-readable time-of-day segment: sabah, öğle, akşam, gece.
+String timeOfDaySegment(DateTime now) {
+  final h = now.hour;
+  if (h >= 6 && h < 12) return 'sabah';
+  if (h >= 12 && h < 18) return 'öğle';
+  if (h >= 18 && h < 23) return 'akşam';
+  return 'gece';
+}
+
