@@ -17,14 +17,15 @@ class GardenScreen extends ConsumerWidget {
     final user = userAsync.value;
     final gardenStart = user?.gardenStartDate ?? DateTime.now();
     final plantInfo = plantFor(gardenStart, DateTime.now());
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       appBar: BloomAppBar(
-        subtitle: 'Çiçek Bahçem',
-        levelTitle: '${plantInfo.completedCycles} Çiçek Açtı',
-        streakDays: 0,
         showBack: true,
+        titleText: 'Çiçek Bahçem',
+        characterId: user?.characterId,
       ),
       body: SafeArea(
         top: false,
@@ -36,10 +37,15 @@ class GardenScreen extends ConsumerWidget {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  AppColors.primaryContainer.withValues(alpha: 0.6),
-                  const Color(0xFFFBF8F3),
-                ],
+                colors: isDark
+                    ? [
+                        colorScheme.surface,
+                        colorScheme.primaryContainer.withValues(alpha: 0.5),
+                      ]
+                    : [
+                        colorScheme.primaryContainer.withValues(alpha: 0.6),
+                        colorScheme.surface,
+                      ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -47,7 +53,7 @@ class GardenScreen extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const EyebrowLabel('30 GÜNLÜK DÖNGÜLER', color: AppColors.primary),
+                      EyebrowLabel('30 GÜNLÜK DÖNGÜLER', color: colorScheme.primary),
                       StatusChip(
                         text: '🌸 ${plantInfo.completedCycles} Çiçek',
                         tone: ChipTone.primary,
@@ -62,7 +68,7 @@ class GardenScreen extends ConsumerWidget {
                     style: TextStyle(
                       fontSize: 13.sp,
                       fontWeight: FontWeight.w600,
-                      color: isDark ? AppColors.darkNeutral : AppColors.neutral,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                 ],
@@ -155,7 +161,7 @@ class GardenScreen extends ConsumerWidget {
                         style: TextStyle(
                           fontSize: 12.sp,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.primaryDark,
+                          color: isDark ? colorScheme.primary : AppColors.primaryDark,
                         ),
                       ),
                       Text(
@@ -163,7 +169,7 @@ class GardenScreen extends ConsumerWidget {
                         style: TextStyle(
                           fontSize: 11.sp,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.neutralVariant,
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],

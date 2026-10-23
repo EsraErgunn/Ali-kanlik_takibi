@@ -106,6 +106,7 @@ class HabitDetailScreen extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final habitsAsync = ref.watch(habitsProvider);
     final logsAsync = ref.watch(habitLogsProvider(habitId));
+    final user = ref.watch(appUserProvider).value;
 
     return habitsAsync.when(
       data: (habits) {
@@ -136,7 +137,7 @@ class HabitDetailScreen extends ConsumerWidget {
           appBar: BloomAppBar(
             showBack: true,
             titleText: habit.title,
-            subtitle: habit.type == HabitType.quit ? 'Özgürlük Yolu' : 'Büyüme Rotası',
+            characterId: user?.characterId,
           ),
           body: SafeArea(
             top: false,
@@ -261,10 +262,10 @@ class HabitDetailScreen extends ConsumerWidget {
         );
       },
       loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        body: SafeArea(child: Center(child: CircularProgressIndicator())),
       ),
       error: (e, _) => Scaffold(
-        body: Center(child: Text('Yüklenemedi: $e')),
+        body: SafeArea(child: Center(child: Text('Yüklenemedi: $e'))),
       ),
     );
   }

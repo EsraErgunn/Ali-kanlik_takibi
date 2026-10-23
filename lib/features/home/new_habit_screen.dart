@@ -148,12 +148,13 @@ class _NewHabitScreenState extends ConsumerState<NewHabitScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final user = ref.watch(appUserProvider).value;
 
     return Scaffold(
-      appBar: const BloomAppBar(
+      appBar: BloomAppBar(
         showBack: true,
         titleText: 'Yeni Alışkanlık',
-        subtitle: 'Tohum Ek',
+        characterId: user?.characterId,
       ),
       body: SafeArea(
         top: false,

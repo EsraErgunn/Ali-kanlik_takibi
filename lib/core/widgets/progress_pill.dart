@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../theme/app_colors.dart';
 
 class ProgressPill extends StatelessWidget {
   const ProgressPill({
@@ -21,10 +20,10 @@ class ProgressPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final clamped = value.clamp(0.0, 1.0);
     final effectiveHeight = height ?? 6.h;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
 
-    final barColor = color ?? (isDark ? AppColors.darkPrimary : AppColors.primary);
-    final bg = backgroundColor ?? (isDark ? const Color(0xFF2C2A27) : const Color(0xFFEBE5DF));
+    final barColor = color ?? colorScheme.primary;
+    final bg = backgroundColor ?? colorScheme.surfaceContainerHighest;
 
     return Container(
       height: effectiveHeight,

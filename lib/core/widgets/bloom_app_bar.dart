@@ -28,15 +28,19 @@ class BloomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     final screenWidth = MediaQuery.sizeOf(context).width;
+
+    final effectiveTitle = titleText ?? (showBack ? '' : 'BloomHabit');
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkBackground : AppColors.background,
+        color: colorScheme.surface,
         border: Border(
           bottom: BorderSide(
-            color: (isDark ? AppColors.darkOutline : AppColors.outline).withValues(alpha: 0.6),
+            color: colorScheme.outline.withValues(alpha: 0.6),
             width: 0.8,
           ),
         ),
@@ -55,52 +59,61 @@ class BloomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     icon: Icon(
                       Icons.arrow_back_ios_new_rounded,
                       size: 20.r,
-                      color: isDark ? AppColors.darkNeutral : AppColors.neutral,
+                      color: colorScheme.onSurface,
                     ),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     onPressed: () => Navigator.of(context).maybePop(),
                   ),
                   SizedBox(width: 8.w),
+                ] else ...[
+                  Text(
+                    '🌱',
+                    style: TextStyle(fontSize: 20.sp),
+                  ),
+                  SizedBox(width: 8.w),
                 ],
-                Text(
-                  '🌱',
-                  style: TextStyle(fontSize: 20.sp),
-                ),
-                SizedBox(width: 8.w),
                 Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        titleText ?? 'BloomHabit',
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w800,
-                          color: isDark ? AppColors.darkPrimary : AppColors.primary,
-                          letterSpacing: -0.4,
-                        ),
-                        maxLines: 1,
-                        softWrap: false,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (subtitle != null) ...[
-                        SizedBox(height: 2.h),
-                        Text(
-                          subtitle!,
+                  child: subtitle != null && subtitle!.isNotEmpty
+                      ? Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              effectiveTitle,
+                              style: TextStyle(
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.w800,
+                                color: isDark ? colorScheme.primary : AppColors.primary,
+                                letterSpacing: -0.4,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            SizedBox(height: 2.h),
+                            Text(
+                              subtitle!,
+                              style: TextStyle(
+                                fontSize: 11.sp,
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        )
+                      : Text(
+                          effectiveTitle,
                           style: TextStyle(
-                            fontSize: 11.sp,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? AppColors.darkNeutralVariant : AppColors.neutralVariant,
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w800,
+                            color: isDark ? colorScheme.primary : AppColors.primary,
+                            letterSpacing: -0.4,
                           ),
                           maxLines: 1,
-                          softWrap: false,
                           overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ],
-                  ),
                 ),
                 SizedBox(width: 8.w),
                 if (!showBack) ...[
@@ -124,9 +137,9 @@ class BloomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     height: 36.r,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: AppColors.primaryContainer,
+                      color: colorScheme.primaryContainer,
                       border: Border.all(
-                        color: AppColors.primary,
+                        color: colorScheme.primary,
                         width: 1.5,
                       ),
                     ),

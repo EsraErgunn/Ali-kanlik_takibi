@@ -422,11 +422,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
       ),
       builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 20.h),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 20.h),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
               const SectionHeader(title: 'Bahçıvanını Seç', icon: Text('🧑‍🌾')),
               SizedBox(height: 16.h),
               GridView.builder(
@@ -491,6 +492,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               SizedBox(height: 20.h),
             ],
           ),
+        ),
         );
       },
     );
