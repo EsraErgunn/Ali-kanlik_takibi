@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class HabitLog {
   const HabitLog({
     required this.date,
@@ -15,13 +13,8 @@ class HabitLog {
   final DateTime at;
   final Map<String, dynamic>? support; // { 'message': '...', 'nextStep': '...' }
 
-  factory HabitLog.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
-    return HabitLog.fromMap(doc.data() ?? {}, defaultDate: doc.id);
-  }
-
   factory HabitLog.fromMap(Map<String, dynamic> data, {String? defaultDate}) {
     DateTime parseDate(dynamic val) {
-      if (val is Timestamp) return val.toDate();
       if (val is String) return DateTime.tryParse(val) ?? DateTime.now();
       return DateTime.now();
     }
@@ -40,7 +33,7 @@ class HabitLog {
       'date': date,
       'status': status,
       'count': count,
-      'at': Timestamp.fromDate(at),
+      'at': at.toIso8601String(),
       if (support != null) 'support': support,
     };
   }

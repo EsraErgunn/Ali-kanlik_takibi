@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class AppUser {
   const AppUser({
     required this.uid,
@@ -23,13 +21,8 @@ class AppUser {
   final String themeMode;
   final DateTime createdAt;
 
-  factory AppUser.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
-    return AppUser.fromMap(doc.id, doc.data() ?? {});
-  }
-
   factory AppUser.fromMap(String uid, Map<String, dynamic> data) {
     DateTime parseDate(dynamic val) {
-      if (val is Timestamp) return val.toDate();
       if (val is String) return DateTime.tryParse(val) ?? DateTime.now();
       return DateTime.now();
     }
@@ -52,11 +45,11 @@ class AppUser {
       'username': username,
       'usernameLower': usernameLower,
       'characterId': characterId,
-      'gardenStartDate': Timestamp.fromDate(gardenStartDate),
+      'gardenStartDate': gardenStartDate.toIso8601String(),
       'shields': shields,
       'lastShieldCheck': lastShieldCheck,
       'themeMode': themeMode,
-      'createdAt': Timestamp.fromDate(createdAt),
+      'createdAt': createdAt.toIso8601String(),
     };
   }
 

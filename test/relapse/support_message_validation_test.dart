@@ -3,6 +3,7 @@ import 'package:bloom_habit/data/models/habit_log.dart';
 import 'package:bloom_habit/data/models/support_message.dart';
 import 'package:bloom_habit/data/repositories/habit_repository.dart';
 import 'package:bloom_habit/data/sources/support_message_source.dart';
+import 'package:bloom_habit/data/services/hive_service.dart';
 import 'package:bloom_habit/features/relapse/fallback_support.dart';
 import 'package:bloom_habit/services/relapse_support_service.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -75,6 +76,10 @@ void main() {
   });
 
   group('RelapseSupportService Fallback and Cache Tests', () {
+    setUp(() async {
+      await HiveService.instance.init();
+    });
+
     final habit = Habit(
       id: 'quit_habit_1',
       title: 'Sigarayı Bırak',

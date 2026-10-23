@@ -389,31 +389,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
             SizedBox(height: 24.h),
 
-            // 6. Çıkış / Silme Butonları
+            // 6. Çıkış Yap / Bahçeyi Sıfırla Butonu
             Center(
               child: TextButton.icon(
-                icon: const Icon(Icons.logout_rounded, color: AppColors.neutralVariant),
+                icon: const Icon(Icons.restart_alt_rounded, color: AppColors.secondary),
                 label: const Text(
-                  'Çıkış Yap',
-                  style: TextStyle(color: AppColors.neutralVariant, fontWeight: FontWeight.w600),
-                ),
-                onPressed: () => _showLogoutDialog(context),
-              ),
-            ),
-            SizedBox(height: 8.h),
-            Center(
-              child: TextButton.icon(
-                icon: const Icon(Icons.delete_forever_outlined, color: AppColors.secondary),
-                label: const Text(
-                  'Hesabı ve Tüm Bahçe Verilerini Sil',
+                  'Çıkış Yap / Bahçeyi Sıfırla',
                   style: TextStyle(color: AppColors.secondary, fontWeight: FontWeight.w700),
                 ),
-                onPressed: () => _showDeleteAccountDialog(context, user?.uid),
+                onPressed: () => _showResetGardenDialog(context),
               ),
             ),
             Center(
               child: Text(
-                'Bu işlem geri alınamaz. Google Play gereksinimlerine uygundur.',
+                'Tüm alışkanlıkların ve kayıtların cihazından kalıcı olarak silinir.',
                 style: TextStyle(fontSize: 10.sp, color: AppColors.neutralVariant),
               ),
             ),
@@ -573,40 +562,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  void _showLogoutDialog(BuildContext context) {
+  void _showResetGardenDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Çıkış Yapılsın mı?'),
-        content: const Text('Oturumun kapatılacak. İstediğin zaman tekrar giriş yapabilirsin.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Vazgeç'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await ref.read(authRepositoryProvider).signOut();
-              if (context.mounted) {
-                context.go('/login');
-              }
-            },
-            child: const Text('Çıkış Yap'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showDeleteAccountDialog(BuildContext context, String? uid) {
-    if (uid == null) return;
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Hesabı ve Bahçeyi Sil?'),
+        title: const Text('Bahçeyi Sıfırla?'),
         content: const Text(
-          'Tüm alışkanlıkların, zincirlerin ve çiçeklerin kalıcı olarak silinecek. Bu işlem geri alınamaz.',
+          'Bahçeni sıfırlamak istediğine emin misin? Tüm alışkanlıkların, günlük kayıtların ve ilerlemen kalıcı olarak temizlenecektir.',
         ),
         actions: [
           TextButton(
@@ -617,13 +579,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             style: FilledButton.styleFrom(backgroundColor: AppColors.secondary),
             onPressed: () async {
               Navigator.pop(ctx);
-              await ref.read(userRepositoryProvider).deleteUserAccount(uid);
-              await ref.read(authRepositoryProvider).signOut();
+              await NotificationService.instance.cancelAll();
+              await ref.read(userRepositoryProvider).deleteUserAccount('current');
               if (context.mounted) {
-                context.go('/login');
+                context.go('/welcome');
               }
             },
-            child: const Text('Kalıcı Olarak Sil'),
+            child: const Text('Sıfırla ve Çıkış Yap'),
           ),
         ],
       ),

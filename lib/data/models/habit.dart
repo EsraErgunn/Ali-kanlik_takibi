@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 enum HabitType { build, quit, count }
 
 class Habit {
@@ -43,10 +41,6 @@ class Habit {
   final bool isDeleted;
   final DateTime createdAt;
 
-  factory Habit.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
-    return Habit.fromMap(doc.id, doc.data() ?? {});
-  }
-
   factory Habit.fromMap(String id, Map<String, dynamic> data) {
     final typeStr = data['type'] as String? ?? 'build';
     final habitType = HabitType.values.firstWhere(
@@ -55,14 +49,12 @@ class Habit {
     );
 
     DateTime parseDate(dynamic val) {
-      if (val is Timestamp) return val.toDate();
       if (val is String) return DateTime.tryParse(val) ?? DateTime.now();
       return DateTime.now();
     }
 
     DateTime? parseNullableDate(dynamic val) {
       if (val == null) return null;
-      if (val is Timestamp) return val.toDate();
       if (val is String) return DateTime.tryParse(val);
       return null;
     }
@@ -103,12 +95,12 @@ class Habit {
       'category': category,
       'icon': icon,
       'color': color,
-      'startDate': Timestamp.fromDate(startDate),
-      'lastRelapseAt': lastRelapseAt != null ? Timestamp.fromDate(lastRelapseAt!) : null,
+      'startDate': startDate.toIso8601String(),
+      'lastRelapseAt': lastRelapseAt?.toIso8601String(),
       'reminderTime': reminderTime,
       'reminderDays': reminderDays,
       'isDeleted': isDeleted,
-      'createdAt': Timestamp.fromDate(createdAt),
+      'createdAt': createdAt.toIso8601String(),
     };
   }
 

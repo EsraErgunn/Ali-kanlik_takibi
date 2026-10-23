@@ -26,15 +26,15 @@ class _UsernameScreenState extends ConsumerState<UsernameScreen> {
   }
 
   void _validate(String value) {
-    final lower = value.trim().toLowerCase();
-    final regex = RegExp(r'^[a-z0-9_.]{3,20}$');
+    final text = value.trim();
+    final regex = RegExp(r'^[a-zA-Z0-9_.]{3,20}$');
     setState(() {
-      if (lower.isEmpty) {
+      if (text.isEmpty) {
         _isValid = false;
         _validationMessage = null;
-      } else if (!regex.hasMatch(lower)) {
+      } else if (!regex.hasMatch(text)) {
         _isValid = false;
-        _validationMessage = '3-20 karakter, sadece küçük harf, rakam, _ ve .';
+        _validationMessage = '3-20 karakter, sadece harf, rakam, _ ve .';
       } else {
         _isValid = true;
         _validationMessage = 'Bu kullanıcı adı uygun ✓';
@@ -44,7 +44,6 @@ class _UsernameScreenState extends ConsumerState<UsernameScreen> {
 
   Future<void> _submit() async {
     final username = _usernameController.text.trim();
-    final uid = ref.read(uidProvider);
 
     if (username.isEmpty || !_isValid) return;
 
@@ -54,9 +53,7 @@ class _UsernameScreenState extends ConsumerState<UsernameScreen> {
     });
 
     try {
-      if (uid != null) {
-        await ref.read(userRepositoryProvider).claimUsername(uid, username);
-      }
+      await ref.read(userRepositoryProvider).claimUsername('current', username);
       if (mounted) {
         context.go('/home');
       }

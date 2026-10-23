@@ -1,11 +1,9 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'app.dart';
-import 'data/services/local_storage_service.dart';
-import 'firebase_options.dart';
+import 'data/services/hive_service.dart';
 import 'services/notification_service.dart';
 
 void main() async {
@@ -22,20 +20,11 @@ void main() async {
     debugPrint('Notification service init notice: $e');
   }
 
-  // Initialize Local Storage Service
+  // Initialize Hive Local Storage Service
   try {
-    await LocalStorageService.instance.init();
+    await HiveService.instance.init();
   } catch (e) {
-    debugPrint('LocalStorageService init notice: $e');
-  }
-
-  // Initialize Firebase safely
-  try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-  } catch (e) {
-    debugPrint('Firebase initialization notice: $e');
+    debugPrint('HiveService init notice: $e');
   }
 
   runApp(

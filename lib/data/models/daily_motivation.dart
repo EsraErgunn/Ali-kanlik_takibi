@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class MotivationOption {
   const MotivationOption({
     required this.title,
@@ -43,13 +41,12 @@ class DailyMotivation {
 
   bool get isSelected => selectedIndex != null;
 
-  factory DailyMotivation.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
-    final data = doc.data() ?? {};
+  factory DailyMotivation.fromMap(Map<String, dynamic> data, {String? defaultDate}) {
     final rawOptions = data['options'] as List<dynamic>? ?? [];
 
     final parsedOptions = rawOptions.map((item) {
-      if (item is Map<String, dynamic>) {
-        return MotivationOption.fromMap(item);
+      if (item is Map) {
+        return MotivationOption.fromMap(Map<String, dynamic>.from(item));
       } else if (item is String) {
         return MotivationOption(
           title: '🌱 Günün Tohumu',
@@ -64,11 +61,16 @@ class DailyMotivation {
       );
     }).toList();
 
+    DateTime? parseDate(dynamic val) {
+      if (val is String) return DateTime.tryParse(val);
+      return null;
+    }
+
     return DailyMotivation(
-      date: data['date'] as String? ?? doc.id,
+      date: data['date'] as String? ?? defaultDate ?? '',
       options: parsedOptions,
       selectedIndex: (data['selectedIndex'] as num?)?.toInt(),
-      selectedAt: (data['selectedAt'] as Timestamp?)?.toDate(),
+      selectedAt: parseDate(data['selectedAt']),
     );
   }
 
@@ -77,7 +79,7 @@ class DailyMotivation {
       'date': date,
       'options': options.map((o) => o.toMap()).toList(),
       'selectedIndex': selectedIndex,
-      'selectedAt': selectedAt != null ? Timestamp.fromDate(selectedAt!) : null,
+      'selectedAt': selectedAt?.toIso8601String(),
     };
   }
 }

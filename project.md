@@ -21,10 +21,10 @@ Temel fikir: Kullanıcı her gün tek dokunuşla alışkanlığını onaylar. Zi
 
 | Katman | Seçim |
 |---|---|
-| Backend / API / DB | Firebase (ayrı backend YOK) |
-| Auth | Firebase Auth — Email/Şifre + Google |
-| Database | Cloud Firestore |
-| AI | Firebase AI Logic (`firebase_ai`) — Gemini flash modeli |
+| Backend / DB | Tamamen cihazda yerel — Hive (`hive_ce`, `hive_ce_flutter`) |
+| Auth | Yok (Hesap/şifre/Google girişi yok, yerel profil) |
+| Database | Hive Boxes (Map/JSON saklama, codegen / TypeAdapter YOK) |
+| AI | Gemini Flash REST API (`http`, `const String.fromEnvironment('GEMINI_API_KEY')`) |
 | State management | `flutter_riverpod` (codegen YOK) |
 | Routing | `go_router` |
 | Grafikler | `fl_chart` |
@@ -68,71 +68,78 @@ test/
   domain/                       # habit_stats ve plant_stage testleri
 ```
 
-Kural: **Widget'lar Firestore'u doğrudan çağırmaz.** Widget → Provider → Repository → Firestore.
+Kural: **Widget'lar Hive kutularını doğrudan çağırmaz.** Widget → Provider → Repository → HiveService.
 
 ---
 
-## 4. Veri Modeli (Firestore)
+## 4. Veri Modeli (Hive Kutuları)
+
+Tüm veriler Hive kutularında Map/JSON olarak tutulur (`build_runner` / `TypeAdapter` kullanılmaz):
 
 ```
-users/{uid}
+profile (tek kayıt, key: "current")
   username: String
-  usernameLower: String
-  characterId: String?          // "char_1" ... (görseller sonra eklenecek)
-  gardenStartDate: Timestamp
-  createdAt: Timestamp
+  characterId: String?          // "char_1" ... "char_6"
+  gardenStartDate: String (ISO8601)
+  shields: int
+  lastShieldCheck: String? (ISO8601)
+  themeMode: String?            // "system" | "light" | "dark"
 
-usernames/{usernameLower}
-  uid: String                   // kullanıcı adı benzersizliği
-
-users/{uid}/habits/{habitId}
+habits (key: habitId)
+  id: String
   title: String
   type: "build" | "quit"        // build: kazanılacak, quit: bırakılacak
-  icon: String                  // Material icon adı veya emoji
-  color: int                    // ARGB
-  startDate: Timestamp
-  lastRelapseAt: Timestamp?     // sadece quit tipinde
-  dailyCost: double?            // opsiyonel, quit tipinde "biriken para" için
+  icon: String                  // emoji veya ikon adı
+  color: int                    // ARGB integer
+  startDate: String (ISO8601)
+  lastRelapseAt: String? (ISO8601)
+  dailyCost: double?
+  targetPerWeek: int?
   reminderTime: "HH:mm"?
-  reminderDays: List<int>       // 1=Pzt ... 7=Paz
+  reminderDays: List<int>
   isDeleted: bool               // soft delete
-  createdAt: Timestamp
+  createdAt: String (ISO8601)
 
-users/{uid}/habits/{habitId}/logs/{yyyy-MM-dd}
-  date: "yyyy-MM-dd"            // aralık sorguları için alan olarak da tutulur
+logs (key: "habitId|yyyy-MM-dd")
+  date: "yyyy-MM-dd"
   status: "done" | "relapse"
-  at: Timestamp
+  count: int?
+  at: String (ISO8601)
+  support: Map<String, dynamic>? // Relapse destek mesajı önbelleği
 
-users/{uid}/motivation/{yyyy-MM-dd}
-  options: List<String>         // tam 3 adet
-  selectedIndex: int?           // null = henüz seçilmedi
-  selectedAt: Timestamp?
+motivation (key: "yyyy-MM-dd")
+  options: List<Map<String, dynamic>> // 3 seçenek: [{id, text, tone}]
+  selectedIndex: int?                 // null = henüz seçilmedi
+  selectedAt: String? (ISO8601)
+
+settings
+  has_profile: bool
 ```
 
-**Log doküman ID'si = yerel tarih (`yyyy-MM-dd`).** Günde tek kayıt böylece garanti edilir.
+- **Reaktivite:** Riverpod `StreamProvider`'lar için `box.watch()` + başlangıç değeri kullanılır.
+- **Tekil Gün Kuralı:** `logs` anahtarı `"habitId|yyyy-MM-dd"` olduğu için gün başına tek kayıt kuralı key yapısıyla garanti edilir.
+- **Yıllık Takvim:** `logs` kutusunda `"habitId|YYYY-"` ön ekiyle taranarak tek geçişte filtrelenir.
 
 ---
 
 ## 5. Ekranlar ve Akış
 
 ```
-Splash (auth kontrolü)
- ├─ giriş yok → Login ⇄ Register (Email + "Google ile devam et")
- └─ giriş var
-     ├─ users/{uid} yok veya username boş → Karakter Seçimi → Kullanıcı Adı
-     └─ tamam → Ana Kabuk (BottomNavigationBar)
-                 ├─ Ana Sayfa
-                 ├─ (Bahçe — 30 gün dolduysa)
-                 └─ Profil
+Splash ("settings" ve "profile" kutusunda profil kontrolü)
+ ├─ profil yok → Karşılama Ekranı ("/welcome" — "Bahçeni Kur 🌱" butonu)
+ │                 └─ Karakter Seçimi ("/onboarding/character")
+ │                      └─ Kullanıcı Adı ("/onboarding/username")
+ │                           └─ Ana Sayfa ("/home")
+ └─ profil var → doğrudan Ana Sayfa ("/home")
 ```
 
-### 5.1 Auth
-- Email/şifre ile giriş + kayıt, Google ile giriş/kayıt.
-- Hata mesajları Türkçe ve anlaşılır olsun (`FirebaseAuthException.code` → Türkçe metin).
+### 5.1 Karşılama & Yerel Profil
+- Hesap/şifre/Google girişi yoktur. E-posta ve şifre hiçbir yerde saklanmaz.
+- Yeni kullanıcı karşılamada "Bahçeni Kur 🌱" butonuna basarak doğrudan karakter seçimine geçer.
 
 ### 5.2 Onboarding
-- **Karakter seçimi:** 6 adet placeholder kart (`char_1`…`char_6`), renkli daire + numara. Görseller sonra `assets/characters/` klasörüne eklenecek. Kod `characterId` saklar.
-- **Kullanıcı adı:** 3–20 karakter, `[a-z0-9_.]`, benzersiz (transaction ile `usernames/` kontrolü).
+- **Karakter seçimi:** 6 adet karakter kartı (`char_1`…`char_6`). Kod `characterId` saklar.
+- **Kullanıcı adı:** 3–20 karakter, format `[a-zA-Z0-9_.]`. Benzersizlik kontrolü yoktur; format doğrulandığında profil yerel olarak kaydedilir.
 
 ### 5.3 Ana Sayfa (yukarıdan aşağıya)
 1. **Bitki alanı:** tohum → filiz → sap → tomurcuk → çiçek. Çiçek rüzgarda sallanır. Görseller placeholder (`assets/plant/stage_0.png` … `stage_4.png`), yoksa `Icon` / `CustomPaint` ile çizilmiş basit placeholder kullan.
@@ -159,13 +166,13 @@ Splash (auth kontrolü)
 - `gardenStartDate`'ten bu yana geçen gün ≥ 30 ise: tamamlanan her 30 günlük döngü bahçede bir çiçek olur. Bütün çiçekler sallanır, büyüme animasyonu bir kez oynar.
 
 ### 5.6 Profil
-- Karakter (dokununca değiştir), kullanıcı adı (düzenle — benzersizlik kontrolüyle).
+- Karakter (dokununca değiştir), kullanıcı adı (düzenle — format kontrolüyle).
 - İstatistik kartları: toplam tamamlama, en uzun zincir, aktif alışkanlık sayısı, üyelik günü.
 - Çiçek galerisi (bahçedeki çiçekler).
 - Rozetler (Faz 5).
 - Bildirim ayarları (genel aç/kapat).
 - Tema: açık / koyu / sistem.
-- Çıkış yap, hesabı sil (onaylı).
+- **Çıkış Yap / Bahçeyi Sıfırla:** onay diyaloğu → bütün Hive kutularını temizle, bildirimleri iptal et → Karşılama ekranına dön. (Hesabı sil butonu ile birleşmiştir).
 
 ---
 
@@ -206,43 +213,41 @@ Her fazın sonunda uygulama **derlenir ve çalışır durumda** olmalı. Her faz
 ## 8. 🚫 KESİNLİKLE YAPILMAYACAKLAR
 
 ### Mimari
-- ❌ Ayrı backend, REST API, Node/.NET sunucusu **yazma**. Cloud Functions **kullanma**.
+- ❌ Firebase veya uzak backend paketleri (`firebase_core`, `firebase_auth`, `cloud_firestore`, `firebase_ai`, `google_sign_in`) **ekleme/kullanma**. Tüm veri cihazda Hive ile tutulur.
+- ❌ Codegen (`riverpod_generator`, `build_runner`, `TypeAdapter`, `freezed`) **kullanma**. Hive kutularında doğrudan Map/JSON saklanır.
 - ❌ Riverpod dışında state yönetimi (Provider, Bloc, GetX, MobX) **ekleme**, karıştırma.
-- ❌ Riverpod codegen (`riverpod_generator`, `build_runner`, `freezed`) **kullanma**. Zaman yok.
-- ❌ Widget içinden `FirebaseFirestore.instance` **çağırma**. Her şey repository üzerinden.
+- ❌ Widget içinden doğrudan Hive kutularını (`HiveService.instance.*Box`) **çağırma**. Her şey repository üzerinden.
 - ❌ İş kurallarını (zincir, yüzde, skor) widget içinde **hesaplama**. Sadece `lib/domain/`.
 - ❌ Global state için `setState` **kullanma** (sadece animasyon gibi widget içi geçici state'te serbest).
 
-### Güvenlik
-- ❌ Gemini/Google API key'ini koda, `.env`'e veya repoya **gömme**. Sadece Firebase AI Logic.
-- ❌ Firestore kurallarını `allow read, write: if true;` olarak **bırakma**.
-- ❌ `google-services.json`, `GoogleService-Info.plist` dışında gizli anahtar **commit'leme**.
+### Güvenlik & AI
+- ❌ Gemini REST API anahtarını koda, `.env`'e, dosyalara veya repoya **ASLA yazma/gömme**. Sadece `const String.fromEnvironment('GEMINI_API_KEY')` ile al.
+- ❌ `google_generative_ai` paketini KULLANMA (deprecated). Doğrudan `http` ile Gemini REST API'ye istek at.
+- ❌ AI anahtarı yoksa veya istek başarısız olursa kullanıcıya hata gösterme; sessizce çevrimdışı yedek listeye düş.
 
 ### Veri / Mantık
-- ❌ Gün hesabını `DateTime.now().difference(x).inDays` veya UTC ile **yapma**. Sadece yerel tarih anahtarları.
-- ❌ Aynı gün için ikinci log **oluşturma**. Geçmiş günü işaretlemeye izin **verme**.
-- ❌ Alışkanlığı onaysız **silme**. Firestore'dan hard delete **yapma** (soft delete).
-- ❌ Motivasyonu her açılışta yeniden **üretme**. Seçim yapıldıktan sonra değiştirmeye izin **verme**.
+- ❌ Gün hesabını `DateTime.now().difference(x).inDays` veya UTC ile **yapma**. Sadece yerel tarih anahtarları (`yyyy-MM-dd`).
+- ❌ Aynı gün için ikinci log **oluşturma**. `logs` anahtarı (`habitId|yyyy-MM-dd`) ile tekillik korunur.
+- ❌ Alışkanlığı onaysız **silme**. Hive'dan hard delete **yapma** (soft delete `isDeleted: true`).
+- ❌ Motivasyonu her açılışta yeniden **üretme**. Günlük seçim yapıldıktan sonra değiştirmeye izin **verme**.
 - ❌ AI'dan tıbbi tavsiye, ilaç, diyet/kalori hedefi, alkol/sigara bırakmaya dair klinik yönlendirme **isteme/gösterme**.
 
 ### UI / Performans
 - ❌ Sabit piksel genişlik/yükseklik (`width: 375`) **kullanma**. ScreenUtil veya oran.
 - ❌ Saniye sayacını global provider'a veya üst widget'a **koyma**. Sadece ilgili kartın kendi küçük widget'ında `Timer` olsun.
-- ❌ Karakter, tohum, çiçek görsellerini **üretmeye/çizmeye çalışma**. Placeholder koy. Görseller kullanıcıdan gelecek.
-- ❌ Yıllık takvimde 365 ayrı Firestore okuması **yapma**. Tek aralık sorgusu.
-- ❌ Lottie/Rive dosyası **uydurma** veya internetten URL ile **çekme**.
+- ❌ Yıllık takvimde kayıtları tek tek okumak yerine `logs` kutusunda `habitId|YYYY-` ön ekiyle tek seferde tara.
 
 ### Kapsam Dışı (bu sürümde YOK)
 - ❌ Arkadaş, sosyal paylaşım, liderlik tablosu, sohbet
 - ❌ Ödeme, abonelik, reklam
 - ❌ Web, desktop, tablet özel tasarımı
 - ❌ Çoklu dil (sadece Türkçe UI)
-- ❌ Apple ile giriş, telefon numarası ile giriş
+- ❌ Çevrimdışı harici kullanıcı girişi (hesap/şifre/Google girişi yok)
 
 ### Süreç
 - ❌ Çalışan kodu sebepsiz yeniden **yazma**, büyük refactor **yapma**.
 - ❌ Listede olmayan paketi kullanıcıya sormadan **ekleme**.
-- ❌ Türkçe commit mesajı **yazma**. Commit mesajları **İngilizce** ve Conventional Commits formatında (`feat: add habit chain calendar`).
+- ❌ Türkçe commit mesajı **yazma**. Commit mesajları **İngilizce** ve Conventional Commits formatında (`refactor: replace firebase with local hive storage`).
 - ❌ Bir fazı derlenmeyen kodla **bitirme**.
 
 ---
@@ -252,9 +257,9 @@ Her fazın sonunda uygulama **derlenir ve çalışır durumda** olmalı. Her faz
 | Dosya | Ne zaman oku |
 |---|---|
 | `skills/state-management.md` | Provider yazarken |
-| `skills/firebase-backend.md` | Auth, Firestore, kurallar, repository |
+| `skills/local-storage.md` | Hive kutuları, key formatları, watch kullanımı, sıfırlama |
 | `skills/habit-logic.md` | Zincir, yüzde, skor, tarih hesapları |
 | `skills/ui-responsive-animation.md` | Ekran, bitki, kart flip, sayaç |
 | `skills/charts-calendar.md` | Grafikler, ısı haritası, yıllık zincir takvimi |
-| `skills/ai-motivation.md` | Motivasyon kartları |
-| `skills/notifications.md` | Hatırlatmalar | bu kodlara göre ekranı oluştur
+| `skills/ai-motivation.md` | Motivasyon kartları ve Gemini REST desteği |
+| `skills/notifications.md` | Hatırlatmalar |

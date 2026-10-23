@@ -30,7 +30,7 @@ final archivedHabitsProvider = StreamProvider<List<Habit>>((ref) {
 final habitLogsProvider = StreamProvider.family<LogMap, String>((ref, habitId) {
   final uid = ref.watch(uidProvider);
   if (uid == null) return const Stream.empty();
-  return ref.watch(habitRepositoryProvider).watchDoneDateKeys(uid, habitId);
+  return ref.watch(habitRepositoryProvider).watchDoneDates(uid, habitId);
 });
 
 final allHabitLogsProvider = Provider<Map<String, LogMap>>((ref) {

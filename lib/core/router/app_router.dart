@@ -1,10 +1,7 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../data/repositories/auth_repository.dart';
+import '../../data/services/hive_service.dart';
 import '../../features/analytics/analytics_screen.dart';
-import '../../features/auth/login_screen.dart';
-import '../../features/auth/register_screen.dart';
 import '../../features/garden/garden_screen.dart';
 import '../../features/habits/habits_screen.dart';
 import '../../features/habit_detail/habit_detail_screen.dart';
@@ -13,64 +10,56 @@ import '../../features/home/new_habit_screen.dart';
 import '../../features/onboarding/character_screen.dart';
 import '../../features/onboarding/username_screen.dart';
 import '../../features/profile/profile_screen.dart';
+import '../../features/welcome/welcome_screen.dart';
 import '../widgets/app_shell.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
-class AuthStateNotifier extends ChangeNotifier {
-  AuthStateNotifier() {
+class ProfileStateNotifier extends ChangeNotifier {
+  ProfileStateNotifier() {
     try {
-      FirebaseAuth.instance.authStateChanges().listen((_) {
+      HiveService.instance.settingsBox.watch(key: 'has_profile').listen((_) {
         notifyListeners();
       });
-    } catch (_) {
-      // Firebase may not be initialized in test environment
-    }
-    AuthRepository.authChangeNotifier.addListener(notifyListeners);
+      HiveService.instance.profileBox.watch(key: 'current').listen((_) {
+        notifyListeners();
+      });
+    } catch (_) {}
   }
 
-  bool get isAuthenticated {
-    if (AuthRepository.currentSessionUid != null) return true;
-    try {
-      return FirebaseAuth.instance.currentUser != null;
-    } catch (_) {
-      return false;
-    }
-  }
+  bool get hasProfile => HiveService.instance.hasProfile;
 }
 
-final AuthStateNotifier authNotifier = AuthStateNotifier();
+final ProfileStateNotifier profileNotifier = ProfileStateNotifier();
 
 final GoRouter appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: '/home',
-  refreshListenable: authNotifier,
+  refreshListenable: profileNotifier,
   redirect: (BuildContext context, GoRouterState state) {
-    final isAuthenticated = authNotifier.isAuthenticated;
+    final hasProfile = profileNotifier.hasProfile;
     final loc = state.matchedLocation;
-    final isAuthRoute = loc == '/login' || loc == '/register';
+    final isOnboardingRoute = loc == '/welcome' ||
+        loc == '/onboarding/character' ||
+        loc == '/onboarding/username';
 
-    // 1. If not logged in, enforce login page
-    if (!isAuthenticated) {
-      return isAuthRoute ? null : '/login';
+    // 1. Profil yoksa: onboarding rotalarında değilse /welcome'a yönlendir
+    if (!hasProfile) {
+      return isOnboardingRoute ? null : '/welcome';
     }
 
-    // 2. If logged in and on login/register, redirect to home
-    if (isAuthRoute) {
+    // 2. Profil varsa ve karşılama ekranındaysa /home'a yönlendir
+    if (loc == '/welcome') {
       return '/home';
     }
 
     return null;
   },
   routes: [
-    // Auth & Onboarding routes (outside bottom bar)
+    // Welcome & Onboarding routes (outside bottom bar)
     GoRoute(
-      path: '/login',
-      builder: (context, state) => const LoginScreen(),
-    ),
-    GoRoute(
-      path: '/register',
-      builder: (context, state) => const RegisterScreen(),
+      path: '/welcome',
+      builder: (context, state) => const WelcomeScreen(),
     ),
     GoRoute(
       path: '/onboarding/character',
@@ -105,7 +94,7 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const GardenScreen(),
     ),
 
-    // Main App Shell with 5 branches (4 tab destinations + center FAB push)
+    // Main App Shell with 4 tab destinations + center FAB push
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
         return AppShell(navigationShell: navigationShell);

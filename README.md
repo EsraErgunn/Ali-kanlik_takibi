@@ -50,57 +50,30 @@
 
 ---
 
+---
+
 ## 🚀 Kurulum ve Başlangıç
 
 ### 1. Gereksinimler
 - Flutter SDK (3.x veya üzeri)
 - Dart SDK
-- Android Studio / Xcode
+- Android Studio / Xcode & iOS Simulator
 
-### 2. Bağımlılıkları Yükleme
+### 2. Bağımlılıkları Yükleme ve Pod Kurulumu
 ```bash
 flutter pub get
+cd ios && pod install && cd ..
 ```
 
-### 3. Firebase Yapılandırması
-1. **Firebase CLI ve FlutterFire CLI Kurulumu:**
-   ```bash
-   dart pub global activate flutterfire_cli
-   ```
-2. **Projeyi Yapılandırma:**
-   ```bash
-   flutterfire configure
-   ```
-   İstendiğinde mevcut Firebase projenizi seçin. Bu işlem `lib/firebase_options.dart` dosyasını otomatik oluşturur.
+### 3. Uygulamayı Çalıştırma
+Uygulama tüm verilerini cihazda yerel Hive kutularında saklar (hesap/şifre girişi gerekmez).
+Gemini Flash AI motivasyon ve relapse destek özelliklerini aktif etmek için `GEMINI_API_KEY` dart-define ile verilir (anahtar verilmezse veya istek başarısız olursa uygulama sessizce yerel zengin havuzuna düşer):
 
-3. **Authentication Sağlayıcılarını Etkinleştirme:**
-   - Firebase Console → **Authentication** → **Sign-in method** sekmesine gidin.
-   - **Email/Password** sağlayıcısını etkinleştirin.
-   - **Google** sağlayıcısını etkinleştirin (destek e-postanızı seçip kaydedin).
-
-4. **Android için SHA-1 Parmak İzi Ekleme (Google Girişi için Zorunlu):**
-   ```bash
-   cd android && ./gradlew signingReport
-   ```
-   Çıktıdaki `SHA-1` ve `SHA-256` parmak izlerini Firebase Console → **Project Settings** → **Your apps** → **Android app** altına ekleyin ve güncel `google-services.json` dosyasını `android/app/` dizinine yerleştirin.
-
-5. **Firebase AI Logic (Gemini Flash) Etkinleştirme:**
-   - Firebase Console → **Build** → **AI Logic** (veya Gemini API) bölümüne gidin.
-   - Projeniz için AI Logic'i etkinleştirin. Uygulama `firebase_ai` paketi üzerinden API anahtarı koda gömülmeden güvenle çalışır.
-   - İnternet erişimi olmadığı durumlarda yerel zengin motivasyon havuzu devreye girer.
-
-6. **Firestore Güvenlik Kurallarını Dağıtma:**
-   Kök dizindeki `firestore.rules` dosyasını Firebase Console Firestore Rules alanına yapıştırın veya CLI ile dağıtın:
-   ```bash
-   firebase deploy --only firestore:rules
-   ```
-
-### 4. Uygulamayı Çalıştırma
 ```bash
-flutter run
+flutter run -d "iPhone 18 Pro" --dart-define=GEMINI_API_KEY=...
 ```
 
-### 5. Testleri Çalıştırma
+### 4. Testleri Çalıştırma
 ```bash
 flutter analyze
 flutter test
@@ -112,31 +85,34 @@ flutter test
 
 ```
 lib/
-├── main.dart                      # Uygulama giriş noktası, Intl ve Bildirim başlatma
+├── main.dart                      # Uygulama giriş noktası, HiveService ve Bildirim başlatma
 ├── app.dart                       # MaterialApp.router, ScreenUtilInit ve Tema sağlayıcı
-├── firebase_options.dart          # FlutterFire tarafından üretilen yapılandırma
 ├── core/
-│   ├── router/app_router.dart     # GoRouter konfigürasyonu ve auth yönlendirme kuralları
+│   ├── router/app_router.dart     # GoRouter konfigürasyonu ve karşılama yönlendirme kuralları
 │   ├── theme/                     # AppTheme, AppColors, ThemeModeNotifier
 │   ├── utils/date_key.dart        # yyyy-MM-dd tarih anahtarı yardımcıları
 │   └── widgets/                   # BloomCard, AppShell, StatTile, ConfettiOverlay vb.
 ├── data/
-│   ├── models/                    # AppUser, Habit, HabitLog, DailyMotivation
-│   └── repositories/              # UserRepository, HabitRepository, MotivationRepository
+│   ├── models/                    # AppUser, Habit, HabitLog, DailyMotivation, SupportMessage
+│   ├── repositories/              # UserRepository, HabitRepository, MotivationRepository (Hive tabanlı)
+│   ├── services/hive_service.dart # profile, habits, logs, motivation, settings kutuları yönetimi
+│   └── sources/                   # GeminiSupportMessageSource, SupportMessageSource
 ├── domain/
 │   ├── habit_stats.dart           # Streak, güç skoru, yüzdeler, birleşik analiz saf fonksiyonları
 │   └── plant_stage.dart           # Bitki aşaması, döngü hesabı, solgunluk kontrolü
 ├── features/
-│   ├── auth/                      # Login, Register ekranları ve sağlayıcılar
-│   ├── onboarding/                # Karakter seçimi ve benzersiz kullanıcı adı kaydı
+│   ├── welcome/                   # Karşılama ekranı ("Bahçeni Kur 🌱" butonu)
+│   ├── onboarding/                # Karakter seçimi ve yerel kullanıcı adı kaydı
 │   ├── home/                      # Bitki kartı, motivasyon kartları, ritüel listesi, yeni alışkanlık
 │   ├── habits/                    # Filtreli alışkanlıklar listesi ve arşivden geri yükleme
 │   ├── habit_detail/              # İrade grafiği, haftalık sütunlar, terrarium ve yıllık zincir
 │   ├── analytics/                 # Birleşik güç skoru, haftalık sürdürülebilirlik, genel yıllık zincir
 │   ├── garden/                    # 30 gün sonrası açan çiçekler bahçesi
-│   └── profile/                   # Karakter & kullanıcı adı düzenleme, rozetler, koyu mod, hesap silme
+│   ├── relapse/                   # Relapse destek kartı ve bottom sheet
+│   └── profile/                   # Karakter & kullanıcı adı, rozetler, koyu mod, "Bahçeyi Sıfırla"
 └── services/
-    ├── ai_service.dart            # Firebase AI Logic Gemini Flash servisi
+    ├── ai_service.dart            # Gemini Flash REST API servisi (http)
+    ├── relapse_support_service.dart
     └── notification_service.dart  # flutter_local_notifications yerel sulama hatırlatıcı servisi
 ```
 
@@ -144,7 +120,8 @@ lib/
 
 ## 🛡️ Güvenlik ve Mimari Prensipleri
 
-- **Firestore Doğrudan Çağrılmaz:** Widget → Provider → Repository → Firestore.
+- **Tamamen Yerel Veri (Offline-First):** Bütün veriler `hive_ce` kutularında Map/JSON formatında saklanır. Harici sunucu bağımlılığı yoktur.
+- **Kutular Doğrudan Çağrılmaz:** Widget → Provider → Repository → HiveService.
 - **İş Kuralları Saf Fonksiyonlardır:** Bütün zincir, yüzde, güç skoru ve kalkan hesapları `lib/domain/` altında bağımsız olarak yazılmış ve birim testlerle doğrulanmıştır.
-- **Güvenli Auth & Transaction:** Kullanıcı adı benzersizliği `usernames/{usernameLower}` koleksiyonu üzerinde Firestore transaction ile garanti edilir.
-- **Gizli Anahtar Bulunmaz:** Gemini anahtarı veya Firebase gizli bilgileri koda gömülmez.
+- **Gizli Anahtar Bulunmaz:** Gemini REST API anahtarı koda, dosyalara veya repoya asla yazılmaz; sadece derleme zamanında `const String.fromEnvironment('GEMINI_API_KEY')` ile alınır.
+

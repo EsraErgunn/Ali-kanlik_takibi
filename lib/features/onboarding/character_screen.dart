@@ -27,18 +27,19 @@ class _CharacterScreenState extends ConsumerState<CharacterScreen> {
   ];
 
   Future<void> _continue() async {
-    final uid = ref.read(uidProvider);
     final selectedId = _characters[_selectedCharacterIndex]['id']!;
 
-    if (uid != null) {
-      setState(() => _isLoading = true);
-      try {
-        await ref.read(userRepositoryProvider).updateCharacter(uid, selectedId);
-      } catch (_) {
-        // Continue even if offline/mocked
-      } finally {
-        if (mounted) setState(() => _isLoading = false);
-      }
+    setState(() => _isLoading = true);
+    try {
+      await ref.read(userRepositoryProvider).createInitialUser(
+            uid: 'current',
+            characterId: selectedId,
+          );
+      await ref.read(userRepositoryProvider).updateCharacter('current', selectedId);
+    } catch (_) {
+      // Continue even if offline
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
 
     if (mounted) {

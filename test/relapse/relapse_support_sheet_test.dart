@@ -7,6 +7,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:bloom_habit/data/repositories/habit_repository.dart';
+import 'package:bloom_habit/features/home/providers.dart';
+
+class FakeHabitRepository extends HabitRepository {
+  @override
+  Future<void> saveRelapseSupport(
+    String uid,
+    String habitId,
+    String dateKey,
+    Map<String, dynamic> supportData,
+  ) async {}
+}
 
 class FakeSourceForWidgetTest implements SupportMessageSource {
   FakeSourceForWidgetTest({required this.message});
@@ -35,6 +47,9 @@ void main() {
         supportMessageSourceProvider.overrideWithValue(
           FakeSourceForWidgetTest(message: message),
         ),
+        habitRepositoryProvider.overrideWithValue(
+          FakeHabitRepository(),
+        ),
       ],
       child: ScreenUtilInit(
         designSize: const Size(390, 844),
@@ -51,11 +66,13 @@ void main() {
   }
 
   group('RelapseSupportSheet Widget Tests', () {
+
     testWidgets('shows message, nextStep, and streak chip for non-alcohol habit', (tester) async {
       tester.view.physicalSize = const Size(1170, 2532);
       tester.view.devicePixelRatio = 3.0;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(() => tester.pumpWidget(const SizedBox()));
 
       final habit = Habit(
         id: 'habit_smoking',
@@ -81,8 +98,10 @@ void main() {
         ),
       );
 
+      await tester.runAsync(() async {
+        await Future.delayed(const Duration(milliseconds: 100));
+      });
       await tester.pump();
-      await tester.pumpAndSettle();
 
       // Header and domain streak
       expect(find.text('Bu bir son değil'), findsOneWidget);
@@ -107,6 +126,7 @@ void main() {
       tester.view.devicePixelRatio = 3.0;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(() => tester.pumpWidget(const SizedBox()));
 
       final habit = Habit(
         id: 'habit_alcohol',
@@ -132,8 +152,10 @@ void main() {
         ),
       );
 
+      await tester.runAsync(() async {
+        await Future.delayed(const Duration(milliseconds: 100));
+      });
       await tester.pump();
-      await tester.pumpAndSettle();
 
       expect(find.text('14 gün temiz kaldın'), findsOneWidget);
       expect(find.text(testMessage.message), findsOneWidget);

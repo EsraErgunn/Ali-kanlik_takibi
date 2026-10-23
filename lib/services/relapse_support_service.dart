@@ -5,14 +5,14 @@ import '../data/models/habit.dart';
 import '../data/models/habit_log.dart';
 import '../data/models/support_message.dart';
 import '../data/repositories/habit_repository.dart';
-import '../data/sources/firebase_ai_support_message_source.dart';
+import '../data/sources/gemini_support_message_source.dart';
 import '../data/sources/support_message_source.dart';
 import '../domain/habit_stats.dart';
 import '../features/home/providers.dart';
 import '../features/relapse/fallback_support.dart';
 
 final supportMessageSourceProvider = Provider<SupportMessageSource>((ref) {
-  return const FirebaseAiSupportMessageSource();
+  return const GeminiSupportMessageSource();
 });
 
 final relapseSupportServiceProvider = Provider<RelapseSupportService>((ref) {
@@ -40,12 +40,12 @@ class RelapseSupportService {
   }) async {
     final todayKey = DateKey.of(now);
 
-    // 1. Önbellek kontrolü: Eğer bugünün logunda support zaten varsa, yeni istek atma
+    // 1. Önbellek kontrolü
     if (todayLog?.support != null && SupportMessage.isValidMap(todayLog!.support)) {
       return SupportMessage.fromMap(todayLog.support!);
     }
 
-    // 2. AI'a gidecek verileri domain üzerinden hesapla
+    // 2. Domain
     final cleanBefore = cleanStreakBeforeRelapse(logs, now);
     final totalClean = totalCleanDays(logs);
     final monthRelapses = relapsesThisMonth(logs, now);
@@ -66,10 +66,8 @@ class RelapseSupportService {
       result = null;
     }
 
-    // 3. Yanıt gelmezse, hata olursa veya timeout olursa sessizce yedek listeye düş
     final finalMessage = result ?? getFallbackSupport(todayKey, habit.id);
 
-    // 4. Üretilen mesajı o günün log dokümanına kaydet
     await habitRepository.saveRelapseSupport(
       uid,
       habit.id,
