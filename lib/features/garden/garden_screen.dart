@@ -27,6 +27,7 @@ class GardenScreen extends ConsumerWidget {
         showBack: true,
       ),
       body: SafeArea(
+        top: false,
         child: ListView(
           padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
           children: [

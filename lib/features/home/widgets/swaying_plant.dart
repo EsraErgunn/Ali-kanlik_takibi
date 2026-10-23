@@ -52,34 +52,36 @@ class _SwayingPlantState extends State<SwayingPlant>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        final plantWidget = child ?? _buildPlantDisplay(context);
-        if (widget.stage == PlantStage.seed) {
-          return plantWidget;
-        }
+    return ExcludeSemantics(
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          final plantWidget = child ?? _buildPlantDisplay(context);
+          if (widget.stage == PlantStage.seed) {
+            return plantWidget;
+          }
 
-        final t = (_controller.value * 2 * math.pi) + widget.phaseOffset;
-        final windAngle = 0.05 * math.sin(t) + 0.015 * math.sin(3 * t + 1);
-        final finalAngle = widget.wilted ? windAngle + 0.10 : windAngle;
+          final t = (_controller.value * 2 * math.pi) + widget.phaseOffset;
+          final windAngle = 0.05 * math.sin(t) + 0.015 * math.sin(3 * t + 1);
+          final finalAngle = widget.wilted ? windAngle + 0.10 : windAngle;
 
-        return Transform.rotate(
-          angle: finalAngle,
-          alignment: Alignment.bottomCenter,
-          child: plantWidget,
-        );
-      },
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 500),
-        transitionBuilder: (child, animation) {
-          return ScaleTransition(
-            scale: animation,
+          return Transform.rotate(
+            angle: finalAngle,
             alignment: Alignment.bottomCenter,
-            child: child,
+            child: plantWidget,
           );
         },
-        child: _buildPlantDisplay(context),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 500),
+          transitionBuilder: (child, animation) {
+            return ScaleTransition(
+              scale: animation,
+              alignment: Alignment.bottomCenter,
+              child: child,
+            );
+          },
+          child: _buildPlantDisplay(context),
+        ),
       ),
     );
   }

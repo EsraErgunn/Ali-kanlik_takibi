@@ -168,18 +168,21 @@ class _FlipCardItem extends StatelessWidget {
       builder: (context, val, child) {
         final isBack = val > math.pi / 2;
 
-        return Transform(
-          alignment: Alignment.center,
-          transform: Matrix4.identity()
-            ..setEntry(3, 2, 0.001)
-            ..rotateY(val),
-          child: isBack
-              ? Transform(
-                  alignment: Alignment.center,
-                  transform: Matrix4.identity()..rotateY(math.pi),
-                  child: _buildBackFace(context),
-                )
-              : _buildFrontFace(context, symbol, label),
+        return ExcludeSemantics(
+          excluding: isLocked,
+          child: Transform(
+            alignment: Alignment.center,
+            transform: Matrix4.identity()
+              ..setEntry(3, 2, 0.001)
+              ..rotateY(val),
+            child: isBack
+                ? Transform(
+                    alignment: Alignment.center,
+                    transform: Matrix4.identity()..rotateY(math.pi),
+                    child: _buildBackFace(context),
+                  )
+                : _buildFrontFace(context, symbol, label),
+          ),
         );
       },
     );

@@ -41,21 +41,23 @@ class ConfettiOverlay extends ConsumerWidget {
         child,
         Align(
           alignment: Alignment.topCenter,
-          child: ConfettiWidget(
-            confettiController: controller,
-            blastDirection: pi / 2,
-            maxBlastForce: 8,
-            minBlastForce: 3,
-            emissionFrequency: 0.05,
-            numberOfParticles: 25,
-            gravity: 0.25,
-            colors: const [
-              AppColors.primary,
-              AppColors.secondary,
-              AppColors.tertiary,
-              Color(0xFF3B82F6),
-              Color(0xFFEC4899),
-            ],
+          child: ExcludeSemantics(
+            child: ConfettiWidget(
+              confettiController: controller,
+              blastDirection: pi / 2,
+              maxBlastForce: 8,
+              minBlastForce: 3,
+              emissionFrequency: 0.05,
+              numberOfParticles: 25,
+              gravity: 0.25,
+              colors: const [
+                AppColors.primary,
+                AppColors.secondary,
+                AppColors.tertiary,
+                Color(0xFF3B82F6),
+                Color(0xFFEC4899),
+              ],
+            ),
           ),
         ),
       ],
