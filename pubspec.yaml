@@ -78,7 +78,6 @@ flutter:
     enable-swift-package-manager: false
 
   assets:
-    - assets/
     - assets/characters/
     - assets/plant/
 

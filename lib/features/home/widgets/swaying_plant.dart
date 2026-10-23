@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../domain/plant_stage.dart';
@@ -27,6 +28,7 @@ class SwayingPlant extends StatefulWidget {
 class _SwayingPlantState extends State<SwayingPlant>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
+  static Set<String>? _availableAssets;
 
   static const List<double> _desaturateMatrix = [
     0.2126 + 0.7874 * 0.25, 0.7152 - 0.7152 * 0.25, 0.0722 - 0.0722 * 0.25, 0, 0,
@@ -42,6 +44,21 @@ class _SwayingPlantState extends State<SwayingPlant>
       vsync: this,
       duration: widget.duration,
     )..repeat();
+    _loadManifest();
+  }
+
+  void _loadManifest() async {
+    if (_availableAssets != null) return;
+    try {
+      final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+      if (mounted) {
+        setState(() {
+          _availableAssets = manifest.listAssets().toSet();
+        });
+      }
+    } catch (_) {
+      _availableAssets = {};
+    }
   }
 
   @override
@@ -85,15 +102,19 @@ class _SwayingPlantState extends State<SwayingPlant>
 
   Widget _buildPlantDisplay(BuildContext context) {
     final plantHeight = widget.height ?? 110.h;
+    final assetPath = 'assets/plant/stage_${widget.stage.index}.png';
+    final hasAsset = _availableAssets?.contains(assetPath) ?? false;
 
-    Widget plantCore = Image.asset(
-      'assets/plant/stage_${widget.stage.index}.png',
-      height: plantHeight,
-      fit: BoxFit.contain,
-      errorBuilder: (context, error, stackTrace) {
-        return _PlantIconPlaceholder(stage: widget.stage, height: plantHeight);
-      },
-    );
+    Widget plantCore = hasAsset
+        ? Image.asset(
+            assetPath,
+            height: plantHeight,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) {
+              return _PlantIconPlaceholder(stage: widget.stage, height: plantHeight);
+            },
+          )
+        : _PlantIconPlaceholder(stage: widget.stage, height: plantHeight);
 
     if (widget.wilted) {
       plantCore = ColorFiltered(

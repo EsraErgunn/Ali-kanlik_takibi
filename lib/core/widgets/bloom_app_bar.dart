@@ -22,131 +22,117 @@ class BloomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String? titleText;
 
   @override
-  Size get preferredSize => Size.fromHeight(68.h);
+  Size get preferredSize => const Size.fromHeight(68);
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final screenWidth = MediaQuery.sizeOf(context).width;
 
-    return SafeArea(
-      bottom: false,
-      child: Container(
-        constraints: BoxConstraints(minHeight: 56.h),
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.darkBackground : AppColors.background,
-          border: Border(
-            bottom: BorderSide(
-              color: (isDark ? AppColors.darkOutline : AppColors.outline).withValues(alpha: 0.6),
-              width: 0.8,
-            ),
+    return Container(
+      height: preferredSize.height,
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkBackground : AppColors.background,
+        border: Border(
+          bottom: BorderSide(
+            color: (isDark ? AppColors.darkOutline : AppColors.outline).withValues(alpha: 0.6),
+            width: 0.8,
           ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Left: back button or logo + title
-            Expanded(
-              child: Row(
-                children: [
-                  if (showBack) ...[
-                    IconButton(
-                      icon: Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 20.r,
-                        color: isDark ? AppColors.darkNeutral : AppColors.neutral,
-                      ),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: () => Navigator.of(context).maybePop(),
-                    ),
-                    SizedBox(width: 8.w),
-                  ],
-                  Text(
-                    '🌱',
-                    style: TextStyle(fontSize: 20.sp),
-                  ),
-                  SizedBox(width: 6.w),
-                  Expanded(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          titleText ?? 'BloomHabit',
-                          style: TextStyle(
-                            fontSize: 17.sp,
-                            fontWeight: FontWeight.w800,
-                            color: isDark ? AppColors.darkPrimary : AppColors.primary,
-                            letterSpacing: -0.4,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (subtitle != null)
-                          Text(
-                            subtitle!,
-                            style: TextStyle(
-                              fontSize: 11.sp,
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? AppColors.darkNeutralVariant : AppColors.neutralVariant,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          if (showBack) ...[
+            IconButton(
+              icon: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                size: 20.r,
+                color: isDark ? AppColors.darkNeutral : AppColors.neutral,
               ),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: () => Navigator.of(context).maybePop(),
             ),
             SizedBox(width: 8.w),
-
-            // Middle & Right: Status chips & Avatar
-            Row(
-              mainAxisSize: MainAxisSize.min,
+          ],
+          Text(
+            '🌱',
+            style: TextStyle(fontSize: 20.sp),
+          ),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (!showBack) ...[
-                  if (screenWidth >= 420) ...[
-                    StatusChip(
-                      text: levelTitle,
-                      tone: ChipTone.primary,
-                    ),
-                    SizedBox(width: 6.w),
-                  ],
-                  StatusChip(
-                    text: '🔥 $streakDays Gün',
-                    tone: ChipTone.secondary,
+                Text(
+                  titleText ?? 'BloomHabit',
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                    letterSpacing: -0.4,
                   ),
-                  SizedBox(width: 8.w),
-                ],
-                GestureDetector(
-                  onTap: onAvatarTap,
-                  child: Container(
-                    width: 36.r,
-                    height: 36.r,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.primaryContainer,
-                      border: Border.all(
-                        color: AppColors.primary,
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Center(
-                      child: Text(
-                        '🧑‍🌾',
-                        style: TextStyle(fontSize: 18.sp),
-                      ),
-                    ),
-                  ),
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
                 ),
+                if (subtitle != null) ...[
+                  SizedBox(height: 2.h),
+                  Text(
+                    subtitle!,
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? AppColors.darkNeutralVariant : AppColors.neutralVariant,
+                    ),
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ],
             ),
+          ),
+          SizedBox(width: 8.w),
+          if (!showBack) ...[
+            if (screenWidth >= 420) ...[
+              StatusChip(
+                text: levelTitle,
+                tone: ChipTone.primary,
+              ),
+              SizedBox(width: 6.w),
+            ],
+            StatusChip(
+              text: '🔥 $streakDays Gün',
+              tone: ChipTone.secondary,
+            ),
+            SizedBox(width: 8.w),
           ],
-        ),
+          GestureDetector(
+            onTap: onAvatarTap,
+            child: Container(
+              width: 36.r,
+              height: 36.r,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.primaryContainer,
+                border: Border.all(
+                  color: AppColors.primary,
+                  width: 1.5,
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  '🧑‍🌾',
+                  style: TextStyle(fontSize: 18.sp),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

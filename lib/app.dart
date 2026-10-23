@@ -17,6 +17,7 @@ class BloomHabitApp extends ConsumerWidget {
       designSize: const Size(390, 844),
       minTextAdapt: true,
       splitScreenMode: true,
+      fontSizeResolver: FontSizeResolvers.radius,
       builder: (context, child) {
         return MaterialApp.router(
           title: 'BloomHabit',
