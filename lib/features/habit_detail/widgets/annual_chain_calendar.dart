@@ -13,12 +13,18 @@ import 'chain_day_painter.dart';
 class AnnualChainCalendar extends ConsumerStatefulWidget {
   const AnnualChainCalendar({
     super.key,
-    required this.habit,
+    this.habit,
     required this.habitLogs,
+    this.startDate,
+    this.title = 'Zinciri Kırma',
+    this.eyebrow = 'YILLIK ZİNCİR',
   });
 
-  final Habit habit;
+  final Habit? habit;
   final LogMap habitLogs;
+  final DateTime? startDate;
+  final String title;
+  final String eyebrow;
 
   @override
   ConsumerState<AnnualChainCalendar> createState() => _AnnualChainCalendarState();
@@ -32,6 +38,10 @@ class _AnnualChainCalendarState extends ConsumerState<AnnualChainCalendar> {
     super.initState();
     _selectedYear = DateTime.now().year;
   }
+
+  DateTime get _effectiveStartDate =>
+      widget.startDate ?? widget.habit?.startDate ?? DateTime(DateTime.now().year, 1, 1);
+
 
   void _showDayDetails(BuildContext context, CalendarDay day) {
     final dateStr = DateFormat('d MMMM yyyy EEEE', 'tr_TR').format(day.date);
@@ -101,26 +111,28 @@ class _AnnualChainCalendarState extends ConsumerState<AnnualChainCalendar> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final now = DateTime.now();
-    final startYear = widget.habit.startDate.year;
+    final startYear = _effectiveStartDate.year;
     final canGoNext = _selectedYear < now.year;
     final canGoPrev = _selectedYear > startYear;
 
-    final yearLogsAsync = ref.watch(
-      yearLogsProvider((habitId: widget.habit.id, year: _selectedYear)),
-    );
+    final yearLogsAsync = widget.habit != null
+        ? ref.watch(
+            yearLogsProvider((habitId: widget.habit!.id, year: _selectedYear)),
+          )
+        : null;
 
     final mergedLogs = <String, String>{
       ...widget.habitLogs,
-      ...?yearLogsAsync.value,
+      ...?yearLogsAsync?.value,
     };
 
     // Calculate annual statistics
-    final daysInYear = DateTime(_selectedYear, 12, 31).difference(DateTime(_selectedYear, 1, 1)).inDays + 1;
     final yearEnd = DateTime(_selectedYear, 12, 31);
     final eligibleEnd = now.isBefore(yearEnd) ? now : yearEnd;
-    final startOfCheck = widget.habit.startDate.isAfter(DateTime(_selectedYear, 1, 1))
-        ? widget.habit.startDate
+    final startOfCheck = _effectiveStartDate.isAfter(DateTime(_selectedYear, 1, 1))
+        ? _effectiveStartDate
         : DateTime(_selectedYear, 1, 1);
+
 
     var eligibleDays = DateKey.daysBetween(DateKey.dateOnly(startOfCheck), DateKey.dateOnly(eligibleEnd)) + 1;
     if (eligibleDays < 1) eligibleDays = 1;
@@ -142,7 +154,7 @@ class _AnnualChainCalendarState extends ConsumerState<AnnualChainCalendar> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const EyebrowLabel('YILLIK ZİNCİR', color: AppColors.primary),
+              EyebrowLabel(widget.eyebrow, color: AppColors.primary),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -178,7 +190,16 @@ class _AnnualChainCalendarState extends ConsumerState<AnnualChainCalendar> {
           ),
           SizedBox(height: 6.h),
           Text(
-            'Bu yıl $doneThisYear / $daysInYear gün (%$percent) · En uzun $longestChain · Aktif $activeChain 🔥',
+            widget.title,
+            style: TextStyle(
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w800,
+              color: isDark ? AppColors.darkNeutral : AppColors.neutral,
+            ),
+          ),
+          SizedBox(height: 4.h),
+          Text(
+            'Bu yıl $doneThisYear gün (%$percent) · En uzun $longestChain · Aktif $activeChain 🔥',
             style: TextStyle(
               fontSize: 11.sp,
               fontWeight: FontWeight.w600,
@@ -209,7 +230,7 @@ class _AnnualChainCalendarState extends ConsumerState<AnnualChainCalendar> {
                     year: _selectedYear,
                     month: month,
                     logs: mergedLogs,
-                    start: widget.habit.startDate,
+                    start: _effectiveStartDate,
                     today: now,
                     isDark: isDark,
                   );
@@ -293,7 +314,7 @@ class _AnnualChainCalendarState extends ConsumerState<AnnualChainCalendar> {
                     child: CustomPaint(
                       painter: ChainDayPainter(
                         day: day,
-                        color: Color(widget.habit.color),
+                        color: widget.habit != null ? Color(widget.habit!.color) : AppColors.primary,
                         isDark: isDark,
                       ),
                     ),

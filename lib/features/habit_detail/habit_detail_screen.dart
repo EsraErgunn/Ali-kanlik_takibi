@@ -1,4 +1,3 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -11,6 +10,8 @@ import '../../domain/habit_stats.dart';
 import '../auth/providers.dart';
 import '../home/providers.dart';
 import 'widgets/annual_chain_calendar.dart';
+import 'widgets/power_score_card.dart';
+import 'widgets/weekly_bars_card.dart';
 
 class HabitDetailScreen extends ConsumerWidget {
   const HabitDetailScreen({
@@ -145,11 +146,20 @@ class HabitDetailScreen extends ConsumerWidget {
                 SizedBox(height: 16.h),
 
                 // 2. Güç Skoru Çizgi Grafiği (LineChart)
-                _buildStrengthScoreCard(habit, logs, now, habitColor, isDark),
+                PowerScoreCard(
+                  logs: logs,
+                  startDate: habit.startDate,
+                  now: now,
+                  color: habitColor,
+                ),
                 SizedBox(height: 16.h),
 
                 // 3. Haftalık Tamamlama Sütun Grafiği (BarChart)
-                _buildWeeklyBarsCard(logs, now, habitColor, isDark),
+                WeeklyBarsCard(
+                  logs: logs,
+                  now: now,
+                  color: habitColor,
+                ),
                 SizedBox(height: 16.h),
 
                 // 4. 30 Günlük Terrarium Matrisi
@@ -421,167 +431,7 @@ class HabitDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStrengthScoreCard(
-    Habit habit,
-    LogMap logs,
-    DateTime now,
-    Color habitColor,
-    bool isDark,
-  ) {
-    final series = strengthSeries(logs, habit.startDate, now);
-    // Take last 30 points
-    final spotsData = series.length > 30 ? series.sublist(series.length - 30) : series;
-    final currentScore = spotsData.isNotEmpty ? spotsData.last : 0;
-    final peakScore = spotsData.isNotEmpty ? spotsData.reduce((a, b) => a > b ? a : b) : 0;
 
-    return BloomCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const EyebrowLabel('DİNAMİK İRADE GRAFİĞİ', color: AppColors.primary),
-              StatusChip(text: '🔥 Kararlı İrade ($currentScore)', tone: ChipTone.secondary),
-            ],
-          ),
-          SizedBox(height: 6.h),
-          StatusChip(text: '🚩 Tepe: $peakScore Puan', tone: ChipTone.primary),
-          SizedBox(height: 12.h),
-          if (spotsData.length < 2)
-            Container(
-              height: 180.h,
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurfaceMuted : AppColors.surfaceMuted,
-                borderRadius: BorderRadius.circular(14.r),
-              ),
-              child: Center(
-                child: Text(
-                  'Birkaç gün sonra burada gelişimini göreceksin.',
-                  style: TextStyle(fontSize: 12.sp, color: AppColors.neutralVariant),
-                ),
-              ),
-            )
-          else
-            SizedBox(
-              height: 200.h,
-              child: LineChart(
-                LineChartData(
-                  minY: 0,
-                  gridData: const FlGridData(show: true, drawVerticalLine: false),
-                  borderData: FlBorderData(show: false),
-                  titlesData: const FlTitlesData(
-                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  ),
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: [
-                        for (var i = 0; i < spotsData.length; i++)
-                          FlSpot(i.toDouble(), spotsData[i].toDouble()),
-                      ],
-                      isCurved: true,
-                      preventCurveOverShooting: true,
-                      barWidth: 3,
-                      color: habitColor,
-                      dotData: const FlDotData(show: false),
-                      belowBarData: BarAreaData(
-                        show: true,
-                        color: habitColor.withValues(alpha: 0.15),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          SizedBox(height: 10.h),
-          const InfoBox(
-            text: 'Güç Skoru Algoritması: Her temiz gün +1 puan kazandırır, kaçırılan gün -1 puan eksiltir. Taban puan 0\'dır, asla negatife inmez.',
-            tone: ChipTone.primary,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWeeklyBarsCard(
-    LogMap logs,
-    DateTime now,
-    Color habitColor,
-    bool isDark,
-  ) {
-    final completions = weeklyCompletions(logs, now); // length 8
-    final thisWeekDone = completions.isNotEmpty ? completions.last : 0;
-    final thisWeekPct = ((thisWeekDone / 7.0) * 100).toInt();
-
-    return BloomCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const EyebrowLabel('SÜRDÜRÜLEBİLİRLİK', color: AppColors.primary),
-              Text(
-                '$thisWeekDone/7 Gün · %$thisWeekPct Başarı',
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-            ],
-          ),
-          SizedBox(height: 14.h),
-          SizedBox(
-            height: 140.h,
-            child: BarChart(
-              BarChartData(
-                maxY: 7,
-                gridData: const FlGridData(show: false),
-                borderData: FlBorderData(show: false),
-                titlesData: FlTitlesData(
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (val, meta) {
-                        final idx = val.toInt();
-                        final title = idx == 7 ? 'Bu' : 'H${idx + 1}';
-                        return Text(
-                          title,
-                          style: TextStyle(
-                            fontSize: 10.sp,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? AppColors.darkNeutralVariant : AppColors.neutralVariant,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                barGroups: List.generate(completions.length, (idx) {
-                  final count = completions[idx];
-                  final isCurrent = idx == completions.length - 1;
-                  return BarChartGroupData(
-                    x: idx,
-                    barRods: [
-                      BarChartRodData(
-                        toY: count.toDouble(),
-                        width: 14.w,
-                        borderRadius: BorderRadius.circular(6.r),
-                        color: isCurrent
-                            ? habitColor
-                            : habitColor.withValues(alpha: count >= 5 ? 0.6 : 0.35),
-                      ),
-                    ],
-                  );
-                }),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildTerrariumMatrixCard(
     LogMap logs,

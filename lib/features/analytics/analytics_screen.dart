@@ -5,6 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/bloom_app_bar.dart';
 import '../../core/widgets/widgets.dart';
+import '../../domain/habit_stats.dart';
+import '../habit_detail/widgets/annual_chain_calendar.dart';
+import '../habit_detail/widgets/power_score_card.dart';
+import '../habit_detail/widgets/weekly_bars_card.dart';
 import '../home/providers.dart';
 
 class AnalyticsScreen extends ConsumerWidget {
@@ -13,13 +17,17 @@ class AnalyticsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final habitsAsync = ref.watch(habitsProvider);
+    final combinedLogs = ref.watch(combinedLogsProvider);
+    final overallStats = ref.watch(overallStatsProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final level = levelFor(totalXp(overallStats.totalCompletedDays * 10));
 
     return Scaffold(
       appBar: BloomAppBar(
         subtitle: 'Analiz & Gelişim',
-        levelTitle: 'Genel Rapor',
-        streakDays: 0,
+        levelTitle: 'Seviye ${level.level} ${level.title}',
+        streakDays: overallStats.longestStreak,
         onAvatarTap: () => context.go('/profile'),
       ),
       body: SafeArea(
@@ -85,60 +93,89 @@ class AnalyticsScreen extends ConsumerWidget {
               );
             }
 
+            final earliestStart = activeHabits
+                .map((h) => h.startDate)
+                .reduce((a, b) => a.isBefore(b) ? a : b);
+            final now = DateTime.now();
+
             return ListView(
               padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
               children: [
-                const SectionHeader(title: 'Genel İlerleme Özeti'),
-                SizedBox(height: 12.h),
-                Row(
+                // 1. Özet İstatistik Kartları (2x2 Grid)
+                GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: 10.h,
+                  crossAxisSpacing: 10.w,
+                  childAspectRatio: 1.25,
                   children: [
-                    Expanded(
-                      child: StatTile(
-                        label: 'AKTİF TOHUMLAR',
-                        value: '${activeHabits.length} Adet',
-                        sub: 'Bahçede büyüyor',
-                        icon: const Icon(Icons.check_circle_outline, size: 16, color: AppColors.primary),
-                      ),
+                    StatTile(
+                      label: 'AKTİF TOHUMLAR',
+                      value: '${activeHabits.length} Adet',
+                      sub: 'Bahçede büyüyor',
+                      icon: const Icon(Icons.eco_rounded, size: 16, color: AppColors.primary),
                     ),
-                    const SizedBox(width: 10),
-                    const Expanded(
-                      child: StatTile(
-                        label: 'GENEL SAĞLIK',
-                        value: '%100',
-                        sub: 'Toprak nemli',
-                        icon: Icon(Icons.local_fire_department, size: 16, color: AppColors.secondary),
-                        valueColor: AppColors.secondary,
-                      ),
+                    StatTile(
+                      label: 'GENEL BAŞARI',
+                      value: '${(overallStats.successRate * 100).toInt()}%',
+                      sub: overallStats.successRate >= 0.7 ? 'Yüksek verim' : 'İrade gelişiyor',
+                      icon: const Icon(Icons.verified_rounded, size: 16, color: AppColors.primary),
+                    ),
+                    StatTile(
+                      label: 'EN UZUN ZİNCİR',
+                      value: '${overallStats.longestStreak} Gün',
+                      sub: 'Tüm zamanların rekoru',
+                      icon: const Icon(Icons.local_fire_department_rounded, size: 16, color: AppColors.secondary),
+                      valueColor: AppColors.secondary,
+                    ),
+                    StatTile(
+                      label: 'TOPLAM SULAMA',
+                      value: '${overallStats.totalCompletedDays} Gün',
+                      sub: 'Başarılı ritüel',
+                      icon: const Icon(Icons.water_drop_rounded, size: 16, color: AppColors.tertiary),
+                      valueColor: AppColors.tertiary,
                     ),
                   ],
                 ),
                 SizedBox(height: 16.h),
-                BloomCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const EyebrowLabel('DİNAMİK İRADE SKORU', color: AppColors.primary),
-                      SizedBox(height: 8.h),
-                      Text(
-                        'Alışkanlıklarını her gün suladıkça güç skoru grafiğin ve yıllık zincirin şekillenecek.',
-                        style: TextStyle(
-                          fontSize: 13.sp,
-                          fontWeight: FontWeight.w500,
-                          color: isDark ? AppColors.darkNeutralVariant : AppColors.neutralVariant,
-                        ),
-                      ),
-                      SizedBox(height: 16.h),
-                      const InfoBox(
-                        text: 'Güç Skoru Algoritması: Her sulanan gün +1 puan kazandırır, kaçırılan gün -1 puan eksiltir. Taban puan 0\'dır.',
-                        tone: ChipTone.primary,
-                      ),
-                    ],
-                  ),
+
+                // 2. Birleşik Güç Skoru Çizgi Grafiği (Dinamik İrade)
+                PowerScoreCard(
+                  logs: combinedLogs,
+                  startDate: earliestStart,
+                  now: now,
+                  eyebrow: 'BİRLEŞİK GÜÇ SKORU',
+                  title: 'Tüm Alışkanlıkların İrade Eğrisi',
+                  explanation: 'Tüm tohumlarının birleşik güç skoru: En az bir alışkanlığın tamamlandığı günler +1 puan, kaçırılan günler -1 puan olarak hesaplanır.',
                 ),
+                SizedBox(height: 16.h),
+
+                // 3. Birleşik Haftalık Tamamlama Sütun Grafiği
+                WeeklyBarsCard(
+                  logs: combinedLogs,
+                  now: now,
+                  eyebrow: 'BİRLEŞİK HAFTALIK SÜRDÜRÜLEBİLİRLİK',
+                ),
+                SizedBox(height: 16.h),
+
+                // 4. Genel Yıllık Zincir Takvimi (Reused AnnualChainCalendar)
+                AnnualChainCalendar(
+                  habitLogs: combinedLogs,
+                  startDate: earliestStart,
+                  title: 'Genel Bahçe Yıllık Zinciri',
+                  eyebrow: 'GENEL YILLIK ZİNCİR',
+                ),
+                SizedBox(height: 24.h),
               ],
             );
           },
-          loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          loading: () => const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32.0),
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
           error: (err, stack) => Center(
             child: Text('Veriler yüklenirken hata oluştu: $err'),
           ),
