@@ -28,17 +28,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final userAsync = ref.watch(appUserProvider);
     final habitsAsync = ref.watch(habitsProvider);
+    final isWilted = ref.watch(isPlantWiltedProvider);
+    final overallStats = ref.watch(overallStatsProvider);
 
     final appUser = userAsync.value;
     final gardenStart = appUser?.gardenStartDate ?? DateTime.now();
     final plantInfo = plantFor(gardenStart, DateTime.now());
-    final level = levelFor(totalXp(0)); // Updated dynamically from logs
+    final level = levelFor(totalXp(overallStats.totalCompletedDays * 10));
 
     return Scaffold(
       appBar: BloomAppBar(
         subtitle: 'Bahçem',
         levelTitle: 'Seviye ${level.level} ${level.title}',
-        streakDays: 0,
+        streakDays: overallStats.longestStreak,
         onAvatarTap: () => context.go('/profile'),
       ),
       body: SafeArea(
@@ -47,7 +49,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
           children: [
             // 1. Bitki Kartı
-            _buildPlantCard(context, plantInfo),
+            _buildPlantCard(
+              context,
+              plantInfo: plantInfo,
+              isWilted: isWilted,
+              shields: appUser?.shields ?? 1,
+            ),
             SizedBox(height: 16.h),
 
             // 2. Günün AI Kehaneti
@@ -64,102 +71,117 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildPlantCard(
-    BuildContext context,
-    ({PlantStage stage, int completedCycles, int dayInCycle, double cycleProgress}) plantInfo,
-  ) {
+    BuildContext context, {
+    required ({PlantStage stage, int completedCycles, int dayInCycle, double cycleProgress}) plantInfo,
+    required bool isWilted,
+    required int shields,
+  }) {
     return InkWell(
       onTap: () => context.push('/garden'),
       borderRadius: BorderRadius.circular(20.r),
       child: BloomCard(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFF2F8F4),
-            Color(0xFFFAF7F2),
-          ],
+          colors: isWilted
+              ? const [
+                  Color(0xFFFBF4ED),
+                  Color(0xFFF6ECE1),
+                ]
+              : const [
+                  Color(0xFFF2F8F4),
+                  Color(0xFFFAF7F2),
+                ],
         ),
-        borderColor: AppColors.primary.withValues(alpha: 0.2),
+        borderColor: isWilted
+            ? AppColors.secondary.withValues(alpha: 0.3)
+            : AppColors.primary.withValues(alpha: 0.2),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: StatusChip(
-                  text: '${plantInfo.stage.emoji} ${plantInfo.stage.title}',
-                  tone: ChipTone.primary,
-                ),
-              ),
-              const SizedBox(width: 6),
-              const StatusChip(
-                text: '🛡 Kalkan: 1/2 Hazır',
-                tone: ChipTone.tertiary,
-              ),
-            ],
-          ),
-          SizedBox(height: 12.h),
-          Center(
-            child: Column(
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                Flexible(
+                  child: StatusChip(
+                    text: isWilted
+                        ? '🥀 ${plantInfo.stage.title} (Solgun)'
+                        : '${plantInfo.stage.emoji} ${plantInfo.stage.title}',
+                    tone: isWilted ? ChipTone.secondary : ChipTone.primary,
+                  ),
+                ),
+                const SizedBox(width: 6),
                 StatusChip(
-                  text: '📅 ${plantInfo.dayInCycle + 1}. Gün',
+                  text: '🛡 Kalkan: $shields Hazır',
                   tone: ChipTone.tertiary,
                 ),
-                SizedBox(height: 12.h),
-                // Swaying plant display with wind physics
-                SizedBox(
-                  height: 125.h,
-                  child: Center(
-                    child: SwayingPlant(
-                      stage: plantInfo.stage,
-                      height: 120.h,
+              ],
+            ),
+            SizedBox(height: 12.h),
+            Center(
+              child: Column(
+                children: [
+                  StatusChip(
+                    text: '📅 ${plantInfo.dayInCycle + 1}. Gün',
+                    tone: ChipTone.tertiary,
+                  ),
+                  SizedBox(height: 12.h),
+                  // Swaying plant display with wind physics & wilted desaturation
+                  SizedBox(
+                    height: 125.h,
+                    child: Center(
+                      child: SwayingPlant(
+                        stage: plantInfo.stage,
+                        wilted: isWilted,
+                        height: 120.h,
+                      ),
                     ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 12.h),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(
+                  child: Text(
+                    '🌿 ${plantInfo.stage.title}',
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w700,
+                      color: isWilted ? AppColors.secondary : AppColors.primaryDark,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                SizedBox(width: 8.w),
+                Text(
+                  '30. Günde Çiçek Açar (%${(plantInfo.cycleProgress * 100).toInt()})',
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.neutralVariant,
                   ),
                 ),
               ],
             ),
-          ),
-          SizedBox(height: 12.h),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Text(
-                  '🌿 ${plantInfo.stage.title}',
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primaryDark,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              SizedBox(width: 8.w),
-              Text(
-                '30. Günde Çiçek Açar (%${(plantInfo.cycleProgress * 100).toInt()})',
-                style: TextStyle(
-                  fontSize: 11.sp,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.neutralVariant,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 8.h),
-          ProgressPill(value: plantInfo.cycleProgress),
-          SizedBox(height: 12.h),
-          const InfoBox(
-            text: 'Bugün tüm alışkanlıklarını tamamlarsan ilk taç yaprağı açacak! Kaçırırsan solma uyarısı devreye girer.',
-            tone: ChipTone.primary,
-          ),
-        ],
+            SizedBox(height: 8.h),
+            ProgressPill(value: plantInfo.cycleProgress),
+            SizedBox(height: 12.h),
+            InfoBox(
+              text: isWilted
+                  ? 'Dün hiçbir tohum sulanmadığı için bitkin solgun görünüyor! Bugün tohumlarını sula ve bitkini canlandır.'
+                  : 'Bugün tüm alışkanlıklarını tamamlarsan ilk taç yaprağı açacak! Kaçırırsan solma uyarısı devreye girer.',
+              tone: isWilted ? ChipTone.secondary : ChipTone.primary,
+            ),
+          ],
+        ),
       ),
-    ),
-  );
+    );
   }
+
 
   Widget _buildTasksSection(BuildContext context, AsyncValue<List<Habit>> habitsAsync) {
     return habitsAsync.when(

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/theme_provider.dart';
 import '../../core/utils/date_key.dart';
 import '../../core/widgets/bloom_app_bar.dart';
 import '../../core/widgets/bloom_card.dart';
@@ -38,6 +39,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final userAsync = ref.watch(appUserProvider);
     final habitsAsync = ref.watch(habitsProvider);
+    final overallStats = ref.watch(overallStatsProvider);
 
     final user = userAsync.value;
     final habits = habitsAsync.value ?? [];
@@ -56,14 +58,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
 
     // Compute stats
-    final activeHabitsCount = habits.where((h) => !h.isDeleted).length;
-    final level = levelFor(totalXp(activeHabitsCount * 10));
+    final level = levelFor(totalXp(overallStats.totalCompletedDays * 10));
 
     return Scaffold(
       appBar: BloomAppBar(
         subtitle: 'Profil & Bahçe Kimliği',
         levelTitle: 'Seviye ${level.level} ${level.title}',
-        streakDays: 0,
+        streakDays: overallStats.longestStreak,
       ),
       body: SafeArea(
         top: false,
@@ -143,7 +144,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
             SizedBox(height: 20.h),
 
-            // 2. 2x2 StatTile Grid
+            // 2. 2x2 StatTile Grid (Real Data: Bahçe Yaşı, Genel Başarı, En Uzun Zincir, Kalkan)
             GridView.count(
               crossAxisCount: 2,
               shrinkWrap: true,
@@ -159,21 +160,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   icon: const Icon(Icons.yard_outlined, size: 16, color: AppColors.primary),
                 ),
                 StatTile(
-                  label: 'AKTİF TOHUM',
-                  value: '$activeHabitsCount Adet',
-                  sub: 'Yeşeren alışkanlık',
-                  icon: const Icon(Icons.eco_rounded, size: 16, color: AppColors.primary),
+                  label: 'GENEL BAŞARI',
+                  value: '${(overallStats.successRate * 100).toInt()}%',
+                  sub: overallStats.successRate >= 0.7 ? 'Yüksek verim' : 'Gelişiyor',
+                  icon: const Icon(Icons.verified_rounded, size: 16, color: AppColors.primary),
                 ),
                 StatTile(
-                  label: 'AÇAN ÇİÇEK',
-                  value: '${plantInfo.completedCycles} Çiçek',
-                  sub: '30 günlük döngü',
-                  icon: const Icon(Icons.local_florist_rounded, size: 16, color: AppColors.secondary),
+                  label: 'EN UZUN ZİNCİR',
+                  value: '${overallStats.longestStreak} Gün',
+                  sub: 'Rekor disiplin',
+                  icon: const Icon(Icons.local_fire_department_rounded, size: 16, color: AppColors.secondary),
                   valueColor: AppColors.secondary,
                 ),
                 StatTile(
                   label: 'DONDURMA JOKERİ',
-                  value: '${user?.shields ?? 1} Hazır',
+                  value: '${user?.shields ?? 0} Hazır',
                   sub: 'Zinciri korur',
                   icon: const Icon(Icons.shield_rounded, size: 16, color: AppColors.tertiary),
                   valueColor: AppColors.tertiary,
@@ -218,7 +219,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             children: [
                               Flexible(
                                 child: Text(
-                                  'Aylık Çiçek Döngüsü',
+                                  plantInfo.completedCycles > 0
+                                      ? '${plantInfo.completedCycles} Çiçek Bahçende Açtı'
+                                      : 'İlk Çiçek Büyüyor 🌱',
                                   style: TextStyle(
                                     fontSize: 13.sp,
                                     fontWeight: FontWeight.w700,
@@ -273,7 +276,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 _buildBadgeCard(
                   title: '7 Günlük Alev',
                   desc: '7 günlük zincir yak',
-                  isUnlocked: false,
+                  isUnlocked: overallStats.longestStreak >= 7,
                   icon: '🔥',
                   isDark: isDark,
                 ),
@@ -295,7 +298,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
             SizedBox(height: 20.h),
 
-            // 5. Ayarlar
+            // 5. Ayarlar & Koyu Tema
             const SectionHeader(title: 'Uygulama & Güvenlik'),
             SizedBox(height: 8.h),
             BloomCard(
@@ -318,6 +321,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     subtitle: Text(char.name),
                     trailing: const Icon(Icons.chevron_right_rounded),
                     onTap: () => _showCharacterPicker(context, user?.uid, user?.characterId),
+                  ),
+                  Divider(height: 1, color: isDark ? AppColors.darkOutline : AppColors.outline),
+                  SwitchListTile.adaptive(
+                    secondary: Icon(
+                      isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                      color: AppColors.primary,
+                    ),
+                    title: const Text('Karanlık Mod'),
+                    subtitle: Text(isDark ? 'Karanlık tema açık' : 'Aydınlık tema açık'),
+                    value: isDark,
+                    activeTrackColor: AppColors.primary,
+                    onChanged: (val) async {
+                      final newMode = val ? 'dark' : 'light';
+                      if (user?.uid != null) {
+                        await ref.read(userRepositoryProvider).updateThemeMode(user!.uid, newMode);
+                      }
+                      ref.read(themeModeProvider.notifier).setThemeMode(val ? ThemeMode.dark : ThemeMode.light);
+                    },
                   ),
                   Divider(height: 1, color: isDark ? AppColors.darkOutline : AppColors.outline),
                   ListTile(

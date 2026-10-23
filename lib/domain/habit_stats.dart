@@ -281,3 +281,56 @@ List<CalendarDay> buildMonth(
 
   return result;
 }
+
+/// Unifies logs across all habits.
+/// A day is marked 'done' if any habit was done on that day.
+LogMap combineHabitLogs(Map<String, LogMap> logsByHabit) {
+  final combined = <String, String>{};
+  for (final logs in logsByHabit.values) {
+    for (final entry in logs.entries) {
+      if (entry.value == 'done') {
+        combined[entry.key] = 'done';
+      } else if (entry.value == 'frozen' && combined[entry.key] != 'done') {
+        combined[entry.key] = 'frozen';
+      } else if (entry.value == 'relapse' && combined[entry.key] == null) {
+        combined[entry.key] = 'relapse';
+      }
+    }
+  }
+  return combined;
+}
+
+/// Computes overall completion rate across all habits.
+double overallCompletionRate({
+  required List<DateTime> startDates,
+  required Map<String, LogMap> logsByHabit,
+  required DateTime today,
+}) {
+  if (startDates.isEmpty) return 0.0;
+  var totalPossible = 0;
+  var totalCompleted = 0;
+
+  var index = 0;
+  for (final logs in logsByHabit.values) {
+    final start = index < startDates.length ? startDates[index] : today;
+    index++;
+    final days = DateKey.daysBetween(DateKey.dateOnly(start), DateKey.dateOnly(today)) + 1;
+    final eligibleDays = days < 1 ? 1 : days;
+    totalPossible += eligibleDays;
+    totalCompleted += totalDone(logs);
+  }
+
+  if (totalPossible == 0) return 0.0;
+  return (totalCompleted / totalPossible).clamp(0.0, 1.0);
+}
+
+/// Finds the longest streak achieved across any habit.
+int overallLongestStreak(Map<String, LogMap> logsByHabit) {
+  var maxStreak = 0;
+  for (final logs in logsByHabit.values) {
+    final s = longestStreak(logs);
+    if (s > maxStreak) maxStreak = s;
+  }
+  return maxStreak;
+}
+

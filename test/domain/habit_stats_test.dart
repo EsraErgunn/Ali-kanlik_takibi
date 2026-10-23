@@ -166,4 +166,46 @@ void main() {
       expect(toFreeze, ['habit_1']);
     });
   });
+
+  group('Overall statistics and combined logs tests', () {
+    test('combineHabitLogs merges distinct dates properly', () {
+      final logsByHabit = {
+        'h1': {'2026-10-20': 'done', '2026-10-21': 'done'},
+        'h2': {'2026-10-21': 'done', '2026-10-22': 'done'},
+      };
+      final combined = combineHabitLogs(logsByHabit);
+      expect(combined.length, 3);
+      expect(combined['2026-10-20'], 'done');
+      expect(combined['2026-10-21'], 'done');
+      expect(combined['2026-10-22'], 'done');
+    });
+
+    test('overallLongestStreak calculates max streak across all habits', () {
+      final logsByHabit = {
+        'h1': {'2026-10-20': 'done', '2026-10-21': 'done'}, // 2
+        'h2': {'2026-10-18': 'done', '2026-10-19': 'done', '2026-10-20': 'done', '2026-10-21': 'done'}, // 4
+      };
+      expect(overallLongestStreak(logsByHabit), 4);
+    });
+
+    test('overallCompletionRate calculates aggregate completion percentage', () {
+      final today = DateTime(2026, 10, 22);
+      final startDates = [
+        DateTime(2026, 10, 20), // 3 days (20, 21, 22)
+        DateTime(2026, 10, 21), // 2 days (21, 22)
+      ];
+      final logsByHabit = {
+        'h1': {'2026-10-20': 'done', '2026-10-21': 'done'}, // 2 done out of 3
+        'h2': {'2026-10-21': 'done', '2026-10-22': 'done'}, // 2 done out of 2
+      };
+      // Total possible = 3 + 2 = 5, total done = 4 -> 4/5 = 0.8
+      final rate = overallCompletionRate(
+        startDates: startDates,
+        logsByHabit: logsByHabit,
+        today: today,
+      );
+      expect(rate, 0.8);
+    });
+  });
 }
+

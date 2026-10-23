@@ -55,6 +55,13 @@ class UserRepository {
     }, SetOptions(merge: true));
   }
 
+  Future<void> updateThemeMode(String uid, String themeMode) async {
+    await _userRef(uid).set({
+      'themeMode': themeMode,
+    }, SetOptions(merge: true));
+  }
+
+
   Future<void> claimUsername(String uid, String username) async {
     final lower = username.trim().toLowerCase();
     await _db.runTransaction((tx) async {
