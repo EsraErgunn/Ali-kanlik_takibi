@@ -14,12 +14,21 @@ class HabitLog {
   final DateTime at;
 
   factory HabitLog.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
-    final data = doc.data() ?? {};
+    return HabitLog.fromMap(doc.data() ?? {}, defaultDate: doc.id);
+  }
+
+  factory HabitLog.fromMap(Map<String, dynamic> data, {String? defaultDate}) {
+    DateTime parseDate(dynamic val) {
+      if (val is Timestamp) return val.toDate();
+      if (val is String) return DateTime.tryParse(val) ?? DateTime.now();
+      return DateTime.now();
+    }
+
     return HabitLog(
-      date: data['date'] as String? ?? doc.id,
+      date: data['date'] as String? ?? defaultDate ?? '',
       status: data['status'] as String? ?? 'done',
       count: (data['count'] as num?)?.toInt(),
-      at: (data['at'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      at: parseDate(data['at']),
     );
   }
 

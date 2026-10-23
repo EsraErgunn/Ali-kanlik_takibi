@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../data/repositories/auth_repository.dart';
 import '../../features/analytics/analytics_screen.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/register_screen.dart';
@@ -25,9 +26,11 @@ class AuthStateNotifier extends ChangeNotifier {
     } catch (_) {
       // Firebase may not be initialized in test environment
     }
+    AuthRepository.authChangeNotifier.addListener(notifyListeners);
   }
 
   bool get isAuthenticated {
+    if (AuthRepository.currentSessionUid != null) return true;
     try {
       return FirebaseAuth.instance.currentUser != null;
     } catch (_) {

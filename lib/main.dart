@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'app.dart';
+import 'data/services/local_storage_service.dart';
 import 'firebase_options.dart';
 import 'services/notification_service.dart';
 
@@ -19,6 +20,13 @@ void main() async {
     await NotificationService.instance.init();
   } catch (e) {
     debugPrint('Notification service init notice: $e');
+  }
+
+  // Initialize Local Storage Service
+  try {
+    await LocalStorageService.instance.init();
+  } catch (e) {
+    debugPrint('LocalStorageService init notice: $e');
   }
 
   // Initialize Firebase safely

@@ -55,10 +55,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     try {
       final cred = await ref.read(authRepositoryProvider).registerWithEmail(email, password);
-      final uid = cred.user?.uid;
-      if (uid != null) {
-        await ref.read(userRepositoryProvider).createInitialUser(uid: uid);
-      }
+      final uid = cred.uid;
+      await ref.read(userRepositoryProvider).createInitialUser(uid: uid);
       if (mounted) {
         context.go('/onboarding/character');
       }

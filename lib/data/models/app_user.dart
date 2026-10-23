@@ -24,17 +24,26 @@ class AppUser {
   final DateTime createdAt;
 
   factory AppUser.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
-    final data = doc.data() ?? {};
+    return AppUser.fromMap(doc.id, doc.data() ?? {});
+  }
+
+  factory AppUser.fromMap(String uid, Map<String, dynamic> data) {
+    DateTime parseDate(dynamic val) {
+      if (val is Timestamp) return val.toDate();
+      if (val is String) return DateTime.tryParse(val) ?? DateTime.now();
+      return DateTime.now();
+    }
+
     return AppUser(
-      uid: doc.id,
+      uid: uid,
       username: data['username'] as String? ?? '',
       usernameLower: data['usernameLower'] as String? ?? '',
       characterId: data['characterId'] as String? ?? 'char_1',
-      gardenStartDate: (data['gardenStartDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      gardenStartDate: parseDate(data['gardenStartDate']),
       shields: (data['shields'] as num?)?.toInt() ?? 1,
       lastShieldCheck: data['lastShieldCheck'] as String?,
       themeMode: data['themeMode'] as String? ?? 'system',
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      createdAt: parseDate(data['createdAt']),
     );
   }
 

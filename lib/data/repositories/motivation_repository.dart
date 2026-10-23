@@ -1,11 +1,23 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/daily_motivation.dart';
+import 'auth_repository.dart';
 
 class MotivationRepository {
   MotivationRepository({FirebaseFirestore? firestore})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
+
+  static final Map<String, DailyMotivation> _localCache = {};
+  static final Map<String, StreamController<DailyMotivation?>> _controllers = {};
+
+  StreamController<DailyMotivation?> _controllerFor(String key) {
+    return _controllers.putIfAbsent(
+      key,
+      () => StreamController<DailyMotivation?>.broadcast(),
+    );
+  }
 
   DocumentReference<Map<String, dynamic>> _docRef(String uid, String dateKey) {
     return _firestore
@@ -16,16 +28,39 @@ class MotivationRepository {
   }
 
   Stream<DailyMotivation?> watchTodayMotivation(String uid, String dateKey) {
-    return _docRef(uid, dateKey).snapshots().map((doc) {
-      if (!doc.exists) return null;
-      return DailyMotivation.fromDoc(doc);
-    });
+    final key = '${uid}_$dateKey';
+    if (AuthRepository.isLocalUid(uid)) {
+      final ctrl = _controllerFor(key);
+      final initial = _localCache[key];
+      return () async* {
+        yield initial;
+        yield* ctrl.stream;
+      }();
+    }
+
+    try {
+      return _docRef(uid, dateKey).snapshots().map((doc) {
+        if (!doc.exists) return _localCache[key];
+        return DailyMotivation.fromDoc(doc);
+      }).handleError((_) => _localCache[key]);
+    } catch (_) {
+      return Stream.value(_localCache[key]);
+    }
   }
 
   Future<DailyMotivation?> getTodayMotivation(String uid, String dateKey) async {
-    final doc = await _docRef(uid, dateKey).get();
-    if (!doc.exists) return null;
-    return DailyMotivation.fromDoc(doc);
+    final key = '${uid}_$dateKey';
+    if (AuthRepository.isLocalUid(uid)) {
+      return _localCache[key];
+    }
+
+    try {
+      final doc = await _docRef(uid, dateKey).get();
+      if (!doc.exists) return _localCache[key];
+      return DailyMotivation.fromDoc(doc);
+    } catch (_) {
+      return _localCache[key];
+    }
   }
 
   Future<DailyMotivation> getOrCreateTodayMotivation({
@@ -33,22 +68,56 @@ class MotivationRepository {
     required String dateKey,
     required Future<List<MotivationOption>> Function() optionGenerator,
   }) async {
-    final ref = _docRef(uid, dateKey);
-    final doc = await ref.get();
-    if (doc.exists) {
-      return DailyMotivation.fromDoc(doc);
+    final key = '${uid}_$dateKey';
+
+    if (AuthRepository.isLocalUid(uid)) {
+      final cached = _localCache[key];
+      if (cached != null) return cached;
+
+      final options = await optionGenerator();
+      final created = DailyMotivation(
+        date: dateKey,
+        options: options,
+        selectedIndex: null,
+        selectedAt: null,
+      );
+      _localCache[key] = created;
+      _controllerFor(key).add(created);
+      return created;
     }
 
-    final options = await optionGenerator();
-    final newMotivation = DailyMotivation(
-      date: dateKey,
-      options: options,
-      selectedIndex: null,
-      selectedAt: null,
-    );
+    try {
+      final ref = _docRef(uid, dateKey);
+      final doc = await ref.get();
+      if (doc.exists) {
+        return DailyMotivation.fromDoc(doc);
+      }
 
-    await ref.set(newMotivation.toMap(), SetOptions(merge: true));
-    return newMotivation;
+      final options = await optionGenerator();
+      final newMotivation = DailyMotivation(
+        date: dateKey,
+        options: options,
+        selectedIndex: null,
+        selectedAt: null,
+      );
+
+      await ref.set(newMotivation.toMap(), SetOptions(merge: true));
+      return newMotivation;
+    } catch (_) {
+      final cached = _localCache[key];
+      if (cached != null) return cached;
+
+      final options = await optionGenerator();
+      final created = DailyMotivation(
+        date: dateKey,
+        options: options,
+        selectedIndex: null,
+        selectedAt: null,
+      );
+      _localCache[key] = created;
+      _controllerFor(key).add(created);
+      return created;
+    }
   }
 
   Future<void> selectOption({
@@ -56,26 +125,33 @@ class MotivationRepository {
     required String dateKey,
     required int optionIndex,
   }) async {
-    final ref = _docRef(uid, dateKey);
+    final key = '${uid}_$dateKey';
+    final current = _localCache[key];
+    if (current != null && current.selectedIndex == null) {
+      final updated = DailyMotivation(
+        date: current.date,
+        options: current.options,
+        selectedIndex: optionIndex,
+        selectedAt: DateTime.now(),
+      );
+      _localCache[key] = updated;
+      _controllerFor(key).add(updated);
+    }
 
-    await _firestore.runTransaction((transaction) async {
-      final snapshot = await transaction.get(ref);
-      if (!snapshot.exists) {
-        throw StateError('Günün motivasyon kartları bulunamadı.');
-      }
-
-      final data = snapshot.data();
-      final currentSelected = data?['selectedIndex'];
-
-      // Only allow selection if not already chosen
-      if (currentSelected != null) {
-        return; // Already chosen today, lock prevents overwrite
-      }
-
-      transaction.update(ref, {
-        'selectedIndex': optionIndex,
-        'selectedAt': FieldValue.serverTimestamp(),
-      });
-    });
+    if (!AuthRepository.isLocalUid(uid)) {
+      try {
+        final ref = _docRef(uid, dateKey);
+        await _firestore.runTransaction((transaction) async {
+          final snapshot = await transaction.get(ref);
+          if (!snapshot.exists) return;
+          final data = snapshot.data();
+          if (data?['selectedIndex'] != null) return;
+          transaction.update(ref, {
+            'selectedIndex': optionIndex,
+            'selectedAt': FieldValue.serverTimestamp(),
+          });
+        });
+      } catch (_) {}
+    }
   }
 }

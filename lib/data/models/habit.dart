@@ -42,15 +42,31 @@ class Habit {
   final DateTime createdAt;
 
   factory Habit.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
-    final data = doc.data() ?? {};
+    return Habit.fromMap(doc.id, doc.data() ?? {});
+  }
+
+  factory Habit.fromMap(String id, Map<String, dynamic> data) {
     final typeStr = data['type'] as String? ?? 'build';
     final habitType = HabitType.values.firstWhere(
       (e) => e.name == typeStr,
       orElse: () => HabitType.build,
     );
 
+    DateTime parseDate(dynamic val) {
+      if (val is Timestamp) return val.toDate();
+      if (val is String) return DateTime.tryParse(val) ?? DateTime.now();
+      return DateTime.now();
+    }
+
+    DateTime? parseNullableDate(dynamic val) {
+      if (val == null) return null;
+      if (val is Timestamp) return val.toDate();
+      if (val is String) return DateTime.tryParse(val);
+      return null;
+    }
+
     return Habit(
-      id: doc.id,
+      id: id,
       title: data['title'] as String? ?? '',
       type: habitType,
       targetLabel: data['targetLabel'] as String?,
@@ -61,13 +77,13 @@ class Habit {
       unitPrice: (data['unitPrice'] as num?)?.toDouble(),
       icon: data['icon'] as String? ?? '🌱',
       color: (data['color'] as num?)?.toInt() ?? 0xFF1B6B48,
-      startDate: (data['startDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      lastRelapseAt: (data['lastRelapseAt'] as Timestamp?)?.toDate(),
+      startDate: parseDate(data['startDate']),
+      lastRelapseAt: parseNullableDate(data['lastRelapseAt']),
       reminderTime: data['reminderTime'] as String?,
       reminderDays: (data['reminderDays'] as List<dynamic>?)?.map((e) => (e as num).toInt()).toList() ??
           const [1, 2, 3, 4, 5, 6, 7],
       isDeleted: data['isDeleted'] as bool? ?? false,
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      createdAt: parseDate(data['createdAt']),
     );
   }
 
