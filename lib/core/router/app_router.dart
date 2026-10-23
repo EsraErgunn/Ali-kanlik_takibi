@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/analytics/analytics_screen.dart';
@@ -15,9 +16,49 @@ import '../widgets/app_shell.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
+class AuthStateNotifier extends ChangeNotifier {
+  AuthStateNotifier() {
+    try {
+      FirebaseAuth.instance.authStateChanges().listen((_) {
+        notifyListeners();
+      });
+    } catch (_) {
+      // Firebase may not be initialized in test environment
+    }
+  }
+
+  bool get isAuthenticated {
+    try {
+      return FirebaseAuth.instance.currentUser != null;
+    } catch (_) {
+      return false;
+    }
+  }
+}
+
+final AuthStateNotifier authNotifier = AuthStateNotifier();
+
 final GoRouter appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: '/home',
+  refreshListenable: authNotifier,
+  redirect: (BuildContext context, GoRouterState state) {
+    final isAuthenticated = authNotifier.isAuthenticated;
+    final loc = state.matchedLocation;
+    final isAuthRoute = loc == '/login' || loc == '/register';
+
+    // 1. If not logged in, enforce login page
+    if (!isAuthenticated) {
+      return isAuthRoute ? null : '/login';
+    }
+
+    // 2. If logged in and on login/register, redirect to home
+    if (isAuthRoute) {
+      return '/home';
+    }
+
+    return null;
+  },
   routes: [
     // Auth & Onboarding routes (outside bottom bar)
     GoRoute(

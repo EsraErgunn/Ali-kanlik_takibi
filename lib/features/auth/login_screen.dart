@@ -65,6 +65,52 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       final cred = await ref.read(authRepositoryProvider).signInWithGoogle();
       if (cred != null && mounted) {
+        final uid = cred.user?.uid;
+        if (uid != null) {
+          final user = await ref.read(userRepositoryProvider).getUser(uid);
+          if (user == null) {
+            await ref.read(userRepositoryProvider).createInitialUser(uid: uid);
+            if (mounted) {
+              context.go('/onboarding/character');
+              return;
+            }
+          }
+        }
+        if (mounted) {
+          context.go('/home');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _errorMessage = e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _loginAsGuest() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final cred = await ref.read(authRepositoryProvider).signInAnonymously();
+      final uid = cred.user?.uid;
+      if (uid != null) {
+        final user = await ref.read(userRepositoryProvider).getUser(uid);
+        if (user == null) {
+          await ref.read(userRepositoryProvider).createInitialUser(uid: uid);
+          if (mounted) {
+            context.go('/onboarding/character');
+            return;
+          }
+        }
+      }
+      if (mounted) {
         context.go('/home');
       }
     } catch (e) {
@@ -183,6 +229,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         onPressed: _isLoading ? null : _loginWithGoogle,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
                               'G',
@@ -193,12 +240,50 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                             ),
                             SizedBox(width: 8.w),
-                            Text(
-                              'Google ile devam et',
-                              style: TextStyle(
-                                fontSize: 13.sp,
-                                fontWeight: FontWeight.w600,
-                                color: isDark ? AppColors.darkNeutral : AppColors.neutral,
+                            Flexible(
+                              child: Text(
+                                'Google ile devam et',
+                                style: TextStyle(
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark ? AppColors.darkNeutral : AppColors.neutral,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 10.h),
+                      OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: Size(double.infinity, 48.h),
+                          side: BorderSide(
+                            color: (isDark ? AppColors.darkOutline : AppColors.outline),
+                            width: 1,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(999.r),
+                          ),
+                        ),
+                        onPressed: _isLoading ? null : _loginAsGuest,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('🌱', style: TextStyle(fontSize: 16.sp)),
+                            SizedBox(width: 8.w),
+                            Flexible(
+                              child: Text(
+                                'Misafir olarak hemen dene',
+                                style: TextStyle(
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark ? AppColors.darkNeutral : AppColors.neutral,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],

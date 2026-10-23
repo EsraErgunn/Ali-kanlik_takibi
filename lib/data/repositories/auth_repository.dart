@@ -48,6 +48,16 @@ class AuthRepository {
     }
   }
 
+  Future<UserCredential> signInAnonymously() async {
+    try {
+      return await _auth.signInAnonymously();
+    } on FirebaseAuthException catch (e) {
+      throw translateAuthError(e.code);
+    } catch (_) {
+      throw 'Misafir girişi yapılırken bir sorun oluştu.';
+    }
+  }
+
   Future<void> signOut() async {
     try {
       await GoogleSignIn.instance.disconnect();
@@ -67,6 +77,8 @@ class AuthRepository {
         return 'Bu e-posta ile zaten bir hesap var.';
       case 'weak-password':
         return 'Şifre en az 6 karakter olmalı.';
+      case 'operation-not-allowed':
+        return 'Bu giriş yöntemi Firebase Console üzerinde etkinleştirilmemiş.';
       case 'network-request-failed':
         return 'İnternet bağlantını kontrol et.';
       default:
