@@ -12,6 +12,7 @@ class BloomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.onAvatarTap,
     this.showBack = false,
     this.titleText,
+    this.characterId,
   });
 
   final String? subtitle;
@@ -20,6 +21,7 @@ class BloomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onAvatarTap;
   final bool showBack;
   final String? titleText;
+  final String? characterId;
 
   @override
   Size get preferredSize => const Size.fromHeight(68);
@@ -125,10 +127,21 @@ class BloomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ),
               child: Center(
-                child: Text(
-                  '🧑‍🌾',
-                  style: TextStyle(fontSize: 18.sp),
-                ),
+                child: characterId != null
+                    ? Image.asset(
+                        'assets/characters/$characterId.png',
+                        width: 22.r,
+                        height: 22.r,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => Text(
+                          '🧑‍🌾',
+                          style: TextStyle(fontSize: 18.sp),
+                        ),
+                      )
+                    : Text(
+                        '🧑‍🌾',
+                        style: TextStyle(fontSize: 18.sp),
+                      ),
               ),
             ),
           ),

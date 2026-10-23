@@ -114,7 +114,16 @@ class _CharacterScreenState extends ConsumerState<CharacterScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(char['emoji']!, style: TextStyle(fontSize: 42.sp)),
+                            Image.asset(
+                              'assets/characters/${char['id']}.png',
+                              width: 48.r,
+                              height: 48.r,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) => Text(
+                                char['emoji']!,
+                                style: TextStyle(fontSize: 42.sp),
+                              ),
+                            ),
                             SizedBox(height: 6.h),
                             Text(
                               char['name']!,

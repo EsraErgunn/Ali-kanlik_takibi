@@ -68,6 +68,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         subtitle: 'Profil & Bahçe Kimliği',
         levelTitle: 'Seviye ${level.level} ${level.title}',
         streakDays: overallStats.longestStreak,
+        characterId: user?.characterId,
       ),
       body: SafeArea(
         top: false,
@@ -94,7 +95,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             ),
                           ),
                           child: Center(
-                            child: Text(char.emoji, style: TextStyle(fontSize: 44.sp)),
+                            child: Image.asset(
+                              'assets/characters/${char.id}.png',
+                              width: 56.r,
+                              height: 56.r,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) => Text(
+                                char.emoji,
+                                style: TextStyle(fontSize: 44.sp),
+                              ),
+                            ),
                           ),
                         ),
                         Positioned(
@@ -461,7 +471,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(c.emoji, style: TextStyle(fontSize: 32.sp)),
+                          Image.asset(
+                            'assets/characters/${c.id}.png',
+                            width: 36.r,
+                            height: 36.r,
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) => Text(
+                              c.emoji,
+                              style: TextStyle(fontSize: 32.sp),
+                            ),
+                          ),
                           SizedBox(height: 6.h),
                           Text(
                             c.name,

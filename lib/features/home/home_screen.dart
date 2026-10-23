@@ -41,6 +41,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         subtitle: 'Bahçem',
         levelTitle: 'Seviye ${level.level} ${level.title}',
         streakDays: overallStats.longestStreak,
+        characterId: appUser?.characterId,
         onAvatarTap: () => context.go('/profile'),
       ),
       body: SafeArea(

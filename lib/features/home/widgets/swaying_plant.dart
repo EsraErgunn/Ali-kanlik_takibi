@@ -86,9 +86,14 @@ class _SwayingPlantState extends State<SwayingPlant>
 
   Widget _buildPlantDisplay(BuildContext context) {
     final plantHeight = widget.height ?? 110.h;
-    Widget plantCore = _PlantIconPlaceholder(
-      stage: widget.stage,
+    Widget plantCore = Image.asset(
+      'assets/plant/stage_${widget.stage.index}.png',
       height: plantHeight,
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) => _PlantIconPlaceholder(
+        stage: widget.stage,
+        height: plantHeight,
+      ),
     );
 
     if (widget.wilted) {
