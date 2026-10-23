@@ -334,3 +334,63 @@ int overallLongestStreak(Map<String, LogMap> logsByHabit) {
   return maxStreak;
 }
 
+/// Calculates completion count per weekday (1=Monday ... 7=Sunday).
+Map<int, int> weekdayDistribution(LogMap logs) {
+  final counts = {for (var i = 1; i <= 7; i++) i: 0};
+  for (final entry in logs.entries) {
+    if (entry.value == 'done') {
+      try {
+        final d = DateKey.parse(entry.key);
+        counts[d.weekday] = (counts[d.weekday] ?? 0) + 1;
+      } catch (_) {}
+    }
+  }
+  return counts;
+}
+
+/// Computes habit type counts: build, quit, count
+({int build, int quit, int count}) habitTypeDistribution(List<Habit> habits) {
+  var b = 0, q = 0, c = 0;
+  for (final h in habits) {
+    if (h.isDeleted) continue;
+    switch (h.type) {
+      case HabitType.build:
+        b++;
+        break;
+      case HabitType.quit:
+        q++;
+        break;
+      case HabitType.count:
+        c++;
+        break;
+    }
+  }
+  return (build: b, quit: q, count: c);
+}
+
+/// Last 6 months completion counts
+List<({String label, int count, int year, int month})> monthlyTrend(LogMap logs, DateTime now) {
+  const monthNames = [
+    '', 'Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'
+  ];
+  final result = <({String label, int count, int year, int month})>[];
+
+  for (var i = 5; i >= 0; i--) {
+    final targetMonth = DateTime(now.year, now.month - i, 1);
+    final prefix = '${targetMonth.year}-${targetMonth.month.toString().padLeft(2, '0')}-';
+    var count = 0;
+    for (final e in logs.entries) {
+      if (e.key.startsWith(prefix) && e.value == 'done') {
+        count++;
+      }
+    }
+    result.add((
+      label: monthNames[targetMonth.month],
+      count: count,
+      year: targetMonth.year,
+      month: targetMonth.month,
+    ));
+  }
+  return result;
+}
+

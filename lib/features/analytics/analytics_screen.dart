@@ -10,6 +10,10 @@ import '../habit_detail/widgets/annual_chain_calendar.dart';
 import '../habit_detail/widgets/power_score_card.dart';
 import '../habit_detail/widgets/weekly_bars_card.dart';
 import '../home/providers.dart';
+import 'widgets/day_of_week_card.dart';
+import 'widgets/habit_ranking_card.dart';
+import 'widgets/habits_balance_card.dart';
+import 'widgets/monthly_trend_card.dart';
 
 class AnalyticsScreen extends ConsumerWidget {
   const AnalyticsScreen({super.key});
@@ -18,6 +22,7 @@ class AnalyticsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final habitsAsync = ref.watch(habitsProvider);
     final combinedLogs = ref.watch(combinedLogsProvider);
+    final allHabitLogs = ref.watch(allHabitLogsProvider);
     final overallStats = ref.watch(overallStatsProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -159,14 +164,41 @@ class AnalyticsScreen extends ConsumerWidget {
                 ),
                 SizedBox(height: 16.h),
 
-                // 4. Genel Yıllık Zincir Takvimi (Reused AnnualChainCalendar)
+                // 4. Haftalık Gün Dağılımı ve En Verimli Gün Grafiği
+                DayOfWeekCard(
+                  logs: combinedLogs,
+                ),
+                SizedBox(height: 16.h),
+
+                // 5. Tohum Dengesi & Tür Dağılımı Donut Grafiği
+                HabitsBalanceCard(
+                  habits: activeHabits,
+                ),
+                SizedBox(height: 16.h),
+
+                // 6. Son 6 Ayın Sulama Büyüme Trendi Çizgi Grafiği
+                MonthlyTrendCard(
+                  logs: combinedLogs,
+                  now: now,
+                ),
+                SizedBox(height: 16.h),
+
+                // 7. Tohum Karnesi & İrade Sıralaması
+                HabitRankingCard(
+                  habits: activeHabits,
+                  logsByHabit: allHabitLogs,
+                  now: now,
+                ),
+                SizedBox(height: 16.h),
+
+                // 8. Genel Yıllık Zincir Takvimi
                 AnnualChainCalendar(
                   habitLogs: combinedLogs,
                   startDate: earliestStart,
                   title: 'Genel Bahçe Yıllık Zinciri',
                   eyebrow: 'GENEL YILLIK ZİNCİR',
                 ),
-                SizedBox(height: 24.h),
+                SizedBox(height: 32.h),
               ],
             );
           },
