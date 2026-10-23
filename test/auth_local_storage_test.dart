@@ -91,4 +91,24 @@ void main() {
     expect(todayLog, isNotNull);
     expect(todayLog!.status, equals('done'));
   });
+
+  test('Anonymous guest login works offline and unregistered email shows guidance', () async {
+    final authRepo = AuthRepository();
+
+    // 1. Unregistered user gives clear guidance
+    expect(
+      () => authRepo.signInWithEmail('nonexistent@example.com', '123456'),
+      throwsA(isA<String>().having((msg) => msg, 'message', contains('Kayıtlı hesap bulunamadı'))),
+    );
+
+    // 2. Anonymous guest login creates guest session immediately
+    final guestResult = await authRepo.signInAnonymously();
+    expect(guestResult.uid, startsWith('guest_'));
+    expect(authRepo.currentUid, equals(guestResult.uid));
+    expect(AuthRepository.isLocalUid(guestResult.uid), isTrue);
+
+    await authRepo.signOut();
+    expect(authRepo.currentUid, isNull);
+  });
 }
+

@@ -100,11 +100,10 @@ class AuthRepository {
       }
     }
 
-    // 2. Try Firebase Auth if available
-    final auth = _safeAuth;
-    if (auth != null) {
+    // 2. Try explicit Firebase Auth if provided (e.g. in tests)
+    if (_auth != null) {
       try {
-        final cred = await auth.signInWithEmailAndPassword(
+        final cred = await _auth.signInWithEmailAndPassword(
           email: cleanEmail,
           password: cleanPassword,
         );
@@ -122,18 +121,17 @@ class AuthRepository {
       } catch (_) {}
     }
 
-    throw 'Giriş yapılamadı. Kayıtlı hesabın yoksa önce Kayıt Ol ekranından hesap oluşturabilirsin.';
+    throw 'Kayıtlı hesap bulunamadı. Lütfen "Kaydol" ile hesap oluştur veya misafir olarak giriş yap.';
   }
 
   Future<AuthResult> registerWithEmail(String email, String password) async {
     final cleanEmail = email.trim();
     final cleanPassword = password.trim();
 
-    // 1. Try Firebase Auth first if available
-    final auth = _safeAuth;
-    if (auth != null) {
+    // 1. Try explicit Firebase Auth if provided (e.g. in tests)
+    if (_auth != null) {
       try {
-        final cred = await auth.createUserWithEmailAndPassword(
+        final cred = await _auth.createUserWithEmailAndPassword(
           email: cleanEmail,
           password: cleanPassword,
         );
@@ -147,7 +145,7 @@ class AuthRepository {
       }
     }
 
-    // 2. Fall back to local registration
+    // 2. Local registration
     if (LocalStorageService.instance.isEmailRegistered(cleanEmail)) {
       throw 'Bu e-posta ile zaten kayıtlı bir hesap var.';
     }
@@ -166,15 +164,14 @@ class AuthRepository {
   }
 
   Future<AuthResult?> signInWithGoogle() async {
-    final auth = _safeAuth;
-    if (auth != null) {
+    if (_auth != null) {
       try {
         await GoogleSignIn.instance.initialize();
         final account = await GoogleSignIn.instance.authenticate();
         final authHeaders = account.authentication;
         final idToken = authHeaders.idToken;
         final credential = GoogleAuthProvider.credential(idToken: idToken);
-        final cred = await auth.signInWithCredential(credential);
+        final cred = await _auth.signInWithCredential(credential);
         final uid = cred.user?.uid;
         if (uid != null) {
           await _setLocalSession(uid);
@@ -183,7 +180,7 @@ class AuthRepository {
       } catch (_) {}
     }
 
-    // Fallback guest login on web if google sign-in fails
+    // Fallback guest login if google sign-in is not configured
     final guestUid = 'guest_google_${DateTime.now().millisecondsSinceEpoch}';
     await _setLocalSession(guestUid);
     return AuthResult(uid: guestUid);
@@ -192,10 +189,9 @@ class AuthRepository {
   Future<AuthResult> signInAnonymously() async {
     final guestUid = 'guest_${DateTime.now().millisecondsSinceEpoch}';
 
-    final auth = _safeAuth;
-    if (auth != null) {
+    if (_auth != null) {
       try {
-        final cred = await auth.signInAnonymously();
+        final cred = await _auth.signInAnonymously();
         final uid = cred.user?.uid;
         if (uid != null) {
           await _setLocalSession(uid);
