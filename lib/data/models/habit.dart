@@ -93,6 +93,7 @@ class Habit {
   }
 
   Habit copyWith({
+    String? id,
     String? title,
     HabitType? type,
     String? targetLabel,
@@ -110,7 +111,7 @@ class Habit {
     bool? isDeleted,
   }) {
     return Habit(
-      id: id,
+      id: id ?? this.id,
       title: title ?? this.title,
       type: type ?? this.type,
       targetLabel: targetLabel ?? this.targetLabel,

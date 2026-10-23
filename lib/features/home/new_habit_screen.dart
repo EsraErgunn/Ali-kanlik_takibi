@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/bloom_app_bar.dart';
 import '../../core/widgets/widgets.dart';
 import '../../data/models/habit.dart';
+import '../../services/notification_service.dart';
 import '../auth/providers.dart';
 import 'providers.dart';
 
@@ -119,7 +120,9 @@ class _NewHabitScreenState extends ConsumerState<NewHabitScreen> {
         createdAt: DateTime.now(),
       );
 
-      await ref.read(habitRepositoryProvider).addHabit(uid, habit);
+      await NotificationService.instance.requestPermissions();
+      final newId = await ref.read(habitRepositoryProvider).addHabit(uid, habit);
+      await NotificationService.instance.scheduleHabit(habit.copyWith(id: newId));
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

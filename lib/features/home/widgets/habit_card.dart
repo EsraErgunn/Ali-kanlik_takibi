@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/confetti_overlay.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../../data/models/habit.dart';
 import '../../../data/models/habit_log.dart';
@@ -30,12 +31,28 @@ class HabitCardItem extends ConsumerWidget {
   void _markDone(WidgetRef ref, BuildContext context) {
     final uid = ref.read(uidProvider);
     if (uid == null) return;
-    HapticFeedback.mediumImpact();
+
+    final current = currentStreak(logs, DateTime.now());
+    final newStreak = current + 1;
+    final isMilestone = newStreak == 7 ||
+        newStreak == 14 ||
+        newStreak == 21 ||
+        newStreak == 30 ||
+        (newStreak % 30 == 0);
+
+    if (isMilestone) {
+      ref.read(celebrationProvider.notifier).celebrate();
+    } else {
+      HapticFeedback.mediumImpact();
+    }
+
     ref.read(habitRepositoryProvider).markToday(uid, habit.id);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('"${habit.title}" sulandı! 💧'),
+        content: Text(isMilestone
+            ? '🎉 Tebrikler! $newStreak Günlük Zincir Kilometre Taşına Ulaştın! 🌸'
+            : '"${habit.title}" sulandı! 💧'),
         duration: const Duration(seconds: 5),
         action: SnackBarAction(
           label: 'Geri Al',

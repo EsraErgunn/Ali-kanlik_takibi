@@ -5,6 +5,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'app.dart';
 import 'firebase_options.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,6 +13,13 @@ void main() async {
   // Initialize Turkish date formatting
   Intl.defaultLocale = 'tr_TR';
   await initializeDateFormatting('tr_TR', null);
+
+  // Initialize Notification Service
+  try {
+    await NotificationService.instance.init();
+  } catch (e) {
+    debugPrint('Notification service init notice: $e');
+  }
 
   // Initialize Firebase safely
   try {

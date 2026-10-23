@@ -160,4 +160,36 @@ class HabitRepository {
             (doc.data()['status'] as String? ?? 'done')
     };
   }
+
+  Future<List<Habit>> fetchActiveHabits(String uid) async {
+    final snap = await _habits(uid).where('isDeleted', isEqualTo: false).get();
+    return snap.docs.map(Habit.fromDoc).toList();
+  }
+
+  Future<LogMap> fetchRecentLogs(String uid, String habitId, int limit) async {
+    final snap = await _logs(uid, habitId)
+        .orderBy('date', descending: true)
+        .limit(limit)
+        .get();
+
+    return {
+      for (final doc in snap.docs)
+        (doc.data()['date'] as String? ?? doc.id):
+            (doc.data()['status'] as String? ?? 'done')
+    };
+  }
+
+  Future<void> setLogStatus(
+    String uid,
+    String habitId,
+    String dateKey,
+    String status,
+  ) async {
+    await _logs(uid, habitId).doc(dateKey).set({
+      'date': dateKey,
+      'status': status,
+      'at': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
 }
+

@@ -16,6 +16,7 @@ import '../../domain/habit_stats.dart';
 import '../../domain/plant_stage.dart';
 import '../auth/providers.dart';
 import '../home/providers.dart';
+import '../../services/notification_service.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -33,6 +34,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     (id: 'char_5', name: 'Çiçek Ruhu', emoji: '🌸', color: Color(0xFFEC4899)),
     (id: 'char_6', name: 'Orman Muhafızı', emoji: '🌲', color: Color(0xFF0F4A31)),
   ];
+
+  bool _notificationsEnabled = true;
 
   @override
   Widget build(BuildContext context) {
@@ -338,6 +341,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         await ref.read(userRepositoryProvider).updateThemeMode(user!.uid, newMode);
                       }
                       ref.read(themeModeProvider.notifier).setThemeMode(val ? ThemeMode.dark : ThemeMode.light);
+                    },
+                  ),
+                  Divider(height: 1, color: isDark ? AppColors.darkOutline : AppColors.outline),
+                  SwitchListTile.adaptive(
+                    secondary: const Icon(
+                      Icons.notifications_active_outlined,
+                      color: AppColors.primary,
+                    ),
+                    title: const Text('Sulama Bildirimleri'),
+                    subtitle: Text(_notificationsEnabled ? 'Hatırlatıcılar açık' : 'Tüm bildirimler kapalı'),
+                    value: _notificationsEnabled,
+                    activeTrackColor: AppColors.primary,
+                    onChanged: (val) async {
+                      setState(() => _notificationsEnabled = val);
+                      if (!val) {
+                        await NotificationService.instance.cancelAll();
+                      } else {
+                        await NotificationService.instance.requestPermissions();
+                        final active = ref.read(habitsProvider).value ?? [];
+                        for (final h in active) {
+                          await NotificationService.instance.scheduleHabit(h);
+                        }
+                      }
                     },
                   ),
                   Divider(height: 1, color: isDark ? AppColors.darkOutline : AppColors.outline),

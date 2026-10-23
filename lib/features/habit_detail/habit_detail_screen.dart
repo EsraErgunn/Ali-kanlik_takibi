@@ -12,6 +12,7 @@ import '../home/providers.dart';
 import 'widgets/annual_chain_calendar.dart';
 import 'widgets/power_score_card.dart';
 import 'widgets/weekly_bars_card.dart';
+import '../../services/notification_service.dart';
 
 class HabitDetailScreen extends ConsumerWidget {
   const HabitDetailScreen({
@@ -44,10 +45,9 @@ class HabitDetailScreen extends ConsumerWidget {
     if (picked != null) {
       final formatted =
           '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
-      await ref.read(habitRepositoryProvider).updateHabit(
-            uid,
-            habit.copyWith(reminderTime: formatted),
-          );
+      final updated = habit.copyWith(reminderTime: formatted);
+      await ref.read(habitRepositoryProvider).updateHabit(uid, updated);
+      await NotificationService.instance.scheduleHabit(updated);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Hatırlatma saati $formatted olarak güncellendi.')),
@@ -79,6 +79,7 @@ class HabitDetailScreen extends ConsumerWidget {
         final uid = ref.read(uidProvider);
         if (uid != null) {
           ref.read(habitRepositoryProvider).softDeleteHabit(uid, habit.id);
+          NotificationService.instance.cancelHabit(habit.id);
           if (context.mounted) {
             Navigator.of(context).pop();
             ScaffoldMessenger.of(context).showSnackBar(
@@ -89,6 +90,7 @@ class HabitDetailScreen extends ConsumerWidget {
                   label: 'Geri Al',
                   onPressed: () {
                     ref.read(habitRepositoryProvider).restoreHabit(uid, habit.id);
+                    NotificationService.instance.scheduleHabit(habit);
                   },
                 ),
               ),

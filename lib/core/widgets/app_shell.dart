@@ -1,15 +1,52 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import '../../features/auth/providers.dart';
+import '../../features/home/providers.dart';
 import '../theme/app_colors.dart';
+import 'confetti_overlay.dart';
 
-class AppShell extends StatelessWidget {
+class AppShell extends ConsumerStatefulWidget {
   const AppShell({
     super.key,
     required this.navigationShell,
   });
 
   final StatefulNavigationShell navigationShell;
+
+  @override
+  ConsumerState<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends ConsumerState<AppShell> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkShields();
+    });
+  }
+
+  Future<void> _checkShields() async {
+    final uid = ref.read(uidProvider);
+    if (uid == null) return;
+    try {
+      final savedCount = await ref.read(userRepositoryProvider).checkAndApplyShields(
+            uid: uid,
+            today: DateTime.now(),
+            habitRepo: ref.read(habitRepositoryProvider),
+          );
+      if (savedCount > 0 && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('🛡 $savedCount alışkanlığının zinciri kalkanınla otomatik korundu!'),
+            backgroundColor: AppColors.tertiary,
+          ),
+        );
+      }
+    } catch (_) {}
+  }
 
   void _onItemTapped(int index, BuildContext context) {
     if (index == 2) {
@@ -19,22 +56,25 @@ class AppShell extends StatelessWidget {
     }
     // Adjust index because index 2 is FAB
     final targetBranch = index > 2 ? index - 1 : index;
-    navigationShell.goBranch(
+    widget.navigationShell.goBranch(
       targetBranch,
-      initialLocation: targetBranch == navigationShell.currentIndex,
+      initialLocation: targetBranch == widget.navigationShell.currentIndex,
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final currentIndex = navigationShell.currentIndex;
+    final currentIndex = widget.navigationShell.currentIndex;
     // Map branch index back to 5-slot navigation index
     final selectedNavIndex = currentIndex >= 2 ? currentIndex + 1 : currentIndex;
 
     return Scaffold(
-      body: navigationShell,
+      body: ConfettiOverlay(
+        child: widget.navigationShell,
+      ),
       bottomNavigationBar: Container(
+
         decoration: BoxDecoration(
           color: isDark ? AppColors.darkSurface : AppColors.surface,
           border: Border(
