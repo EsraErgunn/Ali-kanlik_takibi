@@ -108,9 +108,11 @@ class AuthRepository {
           email: cleanEmail,
           password: cleanPassword,
         );
-        final uid = cred.user!.uid;
-        await _setLocalSession(uid);
-        return AuthResult(uid: uid, email: cleanEmail, firebaseUser: cred.user);
+        final uid = cred.user?.uid;
+        if (uid != null) {
+          await _setLocalSession(uid);
+          return AuthResult(uid: uid, email: cleanEmail, firebaseUser: cred.user);
+        }
       } on FirebaseAuthException catch (e) {
         if (e.code == 'user-not-found' ||
             e.code == 'wrong-password' ||
@@ -135,11 +137,13 @@ class AuthRepository {
           email: cleanEmail,
           password: cleanPassword,
         );
-        final uid = cred.user!.uid;
-        await _setLocalSession(uid);
-        return AuthResult(uid: uid, email: cleanEmail, firebaseUser: cred.user);
+        final uid = cred.user?.uid;
+        if (uid != null) {
+          await _setLocalSession(uid);
+          return AuthResult(uid: uid, email: cleanEmail, firebaseUser: cred.user);
+        }
       } catch (e) {
-        debugPrint('Firebase registration failed, saving locally: $e');
+        debugPrint('Firebase registration fallback: $e');
       }
     }
 
@@ -171,9 +175,11 @@ class AuthRepository {
         final idToken = authHeaders.idToken;
         final credential = GoogleAuthProvider.credential(idToken: idToken);
         final cred = await auth.signInWithCredential(credential);
-        final uid = cred.user!.uid;
-        await _setLocalSession(uid);
-        return AuthResult(uid: uid, email: cred.user?.email, firebaseUser: cred.user);
+        final uid = cred.user?.uid;
+        if (uid != null) {
+          await _setLocalSession(uid);
+          return AuthResult(uid: uid, email: cred.user?.email, firebaseUser: cred.user);
+        }
       } catch (_) {}
     }
 
@@ -184,19 +190,22 @@ class AuthRepository {
   }
 
   Future<AuthResult> signInAnonymously() async {
+    final guestUid = 'guest_${DateTime.now().millisecondsSinceEpoch}';
+
     final auth = _safeAuth;
     if (auth != null) {
       try {
         final cred = await auth.signInAnonymously();
-        final uid = cred.user!.uid;
-        await _setLocalSession(uid);
-        return AuthResult(uid: uid, firebaseUser: cred.user);
+        final uid = cred.user?.uid;
+        if (uid != null) {
+          await _setLocalSession(uid);
+          return AuthResult(uid: uid, firebaseUser: cred.user);
+        }
       } catch (e) {
-        debugPrint('Firebase anonymous login fallback to local guest: $e');
+        debugPrint('Firebase anonymous login fallback: $e');
       }
     }
 
-    final guestUid = 'guest_${DateTime.now().millisecondsSinceEpoch}';
     await _setLocalSession(guestUid);
     return AuthResult(uid: guestUid);
   }

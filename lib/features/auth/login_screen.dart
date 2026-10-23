@@ -99,16 +99,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     try {
       final cred = await ref.read(authRepositoryProvider).signInAnonymously();
-      final uid = cred.user?.uid;
-      if (uid != null) {
-        final user = await ref.read(userRepositoryProvider).getUser(uid);
-        if (user == null) {
-          await ref.read(userRepositoryProvider).createInitialUser(uid: uid);
-          if (mounted) {
-            context.go('/onboarding/character');
-            return;
-          }
-        }
+      final uid = cred.uid;
+      final user = await ref.read(userRepositoryProvider).getUser(uid);
+      if (user == null) {
+        await ref.read(userRepositoryProvider).createInitialUser(
+              uid: uid,
+              characterId: 'char_1',
+            );
+        await ref.read(userRepositoryProvider).claimUsername(uid, 'misafir_bahcivan');
       }
       if (mounted) {
         context.go('/home');

@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/utils/date_key.dart';
 import '../../data/models/daily_motivation.dart';
@@ -12,7 +11,7 @@ import '../../services/ai_service.dart';
 import '../auth/providers.dart';
 
 final habitRepositoryProvider = Provider<HabitRepository>((ref) {
-  return HabitRepository(FirebaseFirestore.instance);
+  return HabitRepository();
 });
 
 final habitsProvider = StreamProvider<List<Habit>>((ref) {
@@ -94,7 +93,7 @@ final aiServiceProvider = Provider<AiService>((ref) {
 
 
 final motivationRepositoryProvider = Provider<MotivationRepository>((ref) {
-  return MotivationRepository(firestore: FirebaseFirestore.instance);
+  return MotivationRepository();
 });
 
 final todayMotivationProvider = StreamProvider<DailyMotivation?>((ref) {

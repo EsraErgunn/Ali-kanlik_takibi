@@ -57,7 +57,9 @@ class UserRepository {
     }
 
     try {
-      return _userRef(uid)!.snapshots().map((snap) {
+      final ref = _userRef(uid);
+      if (ref == null) return Stream.value(_getLocalUser(uid));
+      return ref.snapshots().map((snap) {
         if (!snap.exists) return _getLocalUser(uid);
         return AppUser.fromDoc(snap);
       }).handleError((_) => _getLocalUser(uid));

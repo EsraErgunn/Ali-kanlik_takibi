@@ -121,7 +121,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        user?.username.isNotEmpty == true ? '@${user!.username}' : '@bahcivan',
+                        (user?.username.isNotEmpty == true) ? '@${user?.username}' : '@bahcivan',
                         style: TextStyle(
                           fontSize: 18.sp,
                           fontWeight: FontWeight.w800,
@@ -312,7 +312,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     leading: const Icon(Icons.person_pin_outlined, color: AppColors.primary),
                     title: const Text('Kullanıcı Adı Düzenle'),
                     subtitle: Text(
-                      user?.username.isNotEmpty == true ? '@${user!.username}' : '@bahcivan',
+                      (user?.username.isNotEmpty == true) ? '@${user?.username}' : '@bahcivan',
                     ),
                     trailing: const Icon(Icons.chevron_right_rounded),
                     onTap: () => _showUsernameDialog(context, user?.uid, user?.username),
@@ -337,8 +337,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     activeTrackColor: AppColors.primary,
                     onChanged: (val) async {
                       final newMode = val ? 'dark' : 'light';
-                      if (user?.uid != null) {
-                        await ref.read(userRepositoryProvider).updateThemeMode(user!.uid, newMode);
+                      final uid = user?.uid;
+                      if (uid != null) {
+                        await ref.read(userRepositoryProvider).updateThemeMode(uid, newMode);
                       }
                       ref.read(themeModeProvider.notifier).setThemeMode(val ? ThemeMode.dark : ThemeMode.light);
                     },

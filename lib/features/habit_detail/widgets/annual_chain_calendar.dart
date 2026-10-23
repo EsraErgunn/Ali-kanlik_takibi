@@ -115,9 +115,10 @@ class _AnnualChainCalendarState extends ConsumerState<AnnualChainCalendar> {
     final canGoNext = _selectedYear < now.year;
     final canGoPrev = _selectedYear > startYear;
 
-    final yearLogsAsync = widget.habit != null
+    final habit = widget.habit;
+    final yearLogsAsync = habit != null
         ? ref.watch(
-            yearLogsProvider((habitId: widget.habit!.id, year: _selectedYear)),
+            yearLogsProvider((habitId: habit.id, year: _selectedYear)),
           )
         : null;
 
@@ -314,7 +315,7 @@ class _AnnualChainCalendarState extends ConsumerState<AnnualChainCalendar> {
                     child: CustomPaint(
                       painter: ChainDayPainter(
                         day: day,
-                        color: widget.habit != null ? Color(widget.habit!.color) : AppColors.primary,
+                        color: widget.habit != null ? Color(widget.habit?.color ?? 0xFF1B6B48) : AppColors.primary,
                         isDark: isDark,
                       ),
                     ),
